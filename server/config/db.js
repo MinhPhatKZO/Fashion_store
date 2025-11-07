@@ -4,7 +4,7 @@ const connectDB = async () => {
   try {
     // ✅ Bỏ các options deprecated
     const conn = await mongoose.connect(
-      process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/ecommerce_db'
+      process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/fasion_store'
     );
 
     console.log(`✅ MongoDB Connected: ${conn.connection.host}/${conn.connection.name}`);

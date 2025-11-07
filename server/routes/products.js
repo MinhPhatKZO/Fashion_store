@@ -3,9 +3,7 @@ const Product = require("../models/Product");
 
 const router = express.Router();
 
-/* -----------------------------
-   ✅ LẤY TẤT CẢ SẢN PHẨM
--------------------------------- */
+//lấy tất cả sản phẩm
 router.get("/", async (req, res) => {
   try {
     const { page = 1, limit = 12 } = req.query;
@@ -28,14 +26,12 @@ router.get("/", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ Get products error:", error);
+    console.error(" Get products error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
-/* -----------------------------
-   ✅ LẤY SẢN PHẨM NỔI BẬT
--------------------------------- */
+//lấy sản phẩm nổi bật
 router.get("/featured", async (req, res) => {
   try {
     const products = await Product.find({
@@ -44,17 +40,15 @@ router.get("/featured", async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(8);
 
-    console.log("✅ Featured products count:", products.length);
+    console.log("Featured products count:", products.length);
     res.json(products);
   } catch (error) {
-    console.error("❌ Get featured products error:", error.message);
+    console.error("Get featured products error:", error.message);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
-/* -----------------------------
-   ✅ LẤY CHI TIẾT SẢN PHẨM
--------------------------------- */
+//lấy chi tiết sản phẩm
 router.get("/:id", async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -67,7 +61,7 @@ router.get("/:id", async (req, res) => {
 
     res.json({ product });
   } catch (error) {
-    console.error("❌ Get product detail error:", error.message);
+    console.error("Get product detail error:", error.message);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
