@@ -23,7 +23,13 @@ const userSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    trim: true
+    trim: true,
+    default: ''
+  },
+  address: {
+    type: String,
+    trim: true,
+    default: ''
   },
   avatar: {
     type: String,
@@ -31,9 +37,26 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['user', 'admin', 'seller'],
-    default: 'user'
+    enum: ['user', 'customer', 'admin', 'seller'],
+    default: 'customer'
   },
+  // Seller specific fields
+  brandId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Brand',
+    default: null
+  },
+  storeName: {
+    type: String,
+    trim: true,
+    default: null
+  },
+  storeAddress: {
+    type: String,
+    trim: true,
+    default: null
+  },
+  // Customer specific fields
   addresses: [{
     name: String,
     phone: String,
@@ -69,7 +92,7 @@ const userSchema = new mongoose.Schema({
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   
-  this.password = await bcrypt.hash(this.password, 12);
+  this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
@@ -78,7 +101,7 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Remove password from JSON output
+// Remove sensitive data from JSON output
 userSchema.methods.toJSON = function() {
   const user = this.toObject();
   delete user.password;
@@ -89,4 +112,3 @@ userSchema.methods.toJSON = function() {
 };
 
 module.exports = mongoose.model('User', userSchema);
-

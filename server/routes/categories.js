@@ -1,23 +1,43 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const Category = require('../models/Category');
-const { auth, adminAuth } = require('../middleware/auth');
-
 const router = express.Router();
 
-// GET all active categories, tự động có children do virtual populate
+// GET tất cả category
 router.get('/', async (req, res) => {
-  try {
-    const categories = await Category.find({ isActive: true })
-      .sort({ sortOrder: 1, name: 1 });
-
-    res.json({ categories });
-  } catch (error) {
-    console.error('Get categories error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
+  const categories = await Category.find();
+  res.json(categories);
 });
 
-// Các route khác (POST, PUT, DELETE) giữ nguyên như cũ...
+// POST tạo category
+router.post(
+  '/',
+  body('name').notEmpty().withMessage('Name required'),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    const category = new Category({ name: req.body.name });
+    await category.save();
+    res.json(category);
+  }
+);
+
+// PUT update category
+router.put('/:id', async (req, res) => {
+  const category = await Category.findByIdAndUpdate(
+    req.params.id,
+    { name: req.body.name },
+    { new: true }
+  );
+  res.json(category);
+});
+
+// DELETE category
+router.delete('/:id', async (req, res) => {
+  await Category.findByIdAndDelete(req.params.id);
+  res.json({ msg: 'deleted' });
+});
 
 module.exports = router;

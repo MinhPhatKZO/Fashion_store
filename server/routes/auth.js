@@ -1,5 +1,4 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
@@ -19,19 +18,38 @@ router.post(
   ],
   async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
 
     const { name, email, password } = req.body;
 
     try {
+      // Check if user exists
       let user = await User.findOne({ email });
-      if (user) return res.status(400).json({ message: 'User already exists' });
+      if (user) {
+        return res.status(400).json({ message: 'User already exists' });
+      }
 
-      const hashedPassword = await bcrypt.hash(password, 10);
-      user = new User({ name, email, password: hashedPassword });
+      // Create new user (password will be hashed by pre-save hook)
+      user = new User({
+        name,
+        email,
+        password,
+        role: 'customer' // Default role
+      });
 
       await user.save();
-      res.status(201).json({ message: 'User registered successfully' });
+      
+      res.status(201).json({ 
+        message: 'User registered successfully',
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role
+        }
+      });
     } catch (err) {
       console.error('Register error:', err);
       res.status(500).json({ message: 'Server error' });
@@ -50,24 +68,60 @@ router.post(
   ],
   async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
 
     const { email, password } = req.body;
 
     try {
-      const user = await User.findOne({ email });
-      if (!user) return res.status(400).json({ message: 'Invalid email or password' });
+      // Find user with password field
+      const user = await User.findOne({ email }).select('+password');
+      if (!user) {
+        return res.status(400).json({ message: 'Invalid email or password' });
+      }
 
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) return res.status(400).json({ message: 'Invalid email or password' });
+      // Check if user is active
+      if (!user.isActive) {
+        return res.status(403).json({ message: 'Account is deactivated' });
+      }
 
+      // Compare password using the model method
+      const isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+        return res.status(400).json({ message: 'Invalid email or password' });
+      }
+
+      // Generate JWT token
       const token = jwt.sign(
         { id: user._id, role: user.role },
         process.env.JWT_SECRET || 'default_secret',
         { expiresIn: '7d' }
       );
 
-      res.json({ message: 'Login successful', token, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+      // Return user info based on role
+      const userResponse = {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+        address: user.address,
+        avatar: user.avatar
+      };
+
+      // Add seller specific fields if role is seller
+      if (user.role === 'seller') {
+        userResponse.storeName = user.storeName;
+        userResponse.storeAddress = user.storeAddress;
+        userResponse.brandId = user.brandId;
+      }
+
+      res.json({ 
+        message: 'Login successful', 
+        token, 
+        user: userResponse
+      });
     } catch (err) {
       console.error('Login error:', err);
       res.status(500).json({ message: 'Server error' });
@@ -81,9 +135,40 @@ router.post(
 router.get('/profile', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
     res.json({ user });
   } catch (err) {
     console.error('Get profile error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   PUT /api/auth/profile
+// @desc    Update user profile
+// @access  Private
+router.put('/profile', auth, async (req, res) => {
+  try {
+    const { name, phone, address } = req.body;
+    
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (name) user.name = name;
+    if (phone) user.phone = phone;
+    if (address) user.address = address;
+
+    await user.save();
+
+    res.json({ 
+      message: 'Profile updated successfully',
+      user 
+    });
+  } catch (err) {
+    console.error('Update profile error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -102,4 +187,3 @@ router.get('/all', auth, adminAuth, async (req, res) => {
 });
 
 module.exports = router;
-
