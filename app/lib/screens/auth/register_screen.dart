@@ -31,12 +31,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       setState(() => loading = false);
 
       Navigator.pushReplacementNamed(context, '/login');
-
     } catch (e) {
       setState(() => loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
@@ -111,7 +110,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text("Register", style: TextStyle(color: Colors.white)),
+                      : const Text(
+                          "Register",
+                          style: TextStyle(color: Colors.white),
+                        ),
                 ),
               ),
             ],

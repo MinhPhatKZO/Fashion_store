@@ -18,21 +18,24 @@ class WelcomeScreen extends StatelessWidget {
             const SizedBox(height: 20),
             Image.asset("assets/intro.png", height: 180),
             const SizedBox(height: 32),
-            const Text("Let’s talk with new friends",
-                style: TextStyle(fontSize: 15)),
+            const Text(
+              "Let’s talk with new friends",
+              style: TextStyle(fontSize: 15),
+            ),
             const SizedBox(height: 40),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
                 fixedSize: const Size(180, 44),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               onPressed: () {
                 Navigator.pushNamed(context, "/login");
               },
               child: const Text("Get Started"),
-            )
+            ),
           ],
         ),
       ),

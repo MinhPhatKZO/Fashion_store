@@ -6,6 +6,7 @@ import 'screens/auth/register_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/admin/admin_screen.dart';
 import 'screens/seller/seller_screen.dart';
+import 'screens/cart/cart_screen.dart';
 
 void main() {
   runApp(const FashionStoreApp());
@@ -21,9 +22,7 @@ class FashionStoreApp extends StatelessWidget {
       title: 'Fashion Store App',
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2D5016),
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2D5016)),
         fontFamily: 'Inter',
       ),
 
@@ -35,6 +34,7 @@ class FashionStoreApp extends StatelessWidget {
         '/login': (_) => const LoginScreen(),
         '/register': (_) => const RegisterScreen(),
         '/home': (_) => const HomeScreen(),
+  '/cart': (_) => const CartScreen(),
         '/admin': (_) => const AdminScreen(),
         '/seller': (_) => const SellerScreen(),
       },
@@ -88,9 +88,7 @@ class _AuthCheckState extends State<AuthCheck> {
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     // If no role or no token, go to welcome

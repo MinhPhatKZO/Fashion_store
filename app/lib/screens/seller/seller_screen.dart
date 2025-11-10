@@ -43,10 +43,7 @@ class _SellerScreenState extends State<SellerScreen> {
       appBar: AppBar(
         title: const Text('Seller Dashboard'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _logout,
-          ),
+          IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
         ],
       ),
       body: Padding(
@@ -54,8 +51,10 @@ class _SellerScreenState extends State<SellerScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Welcome, $username',
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            Text(
+              'Welcome, $username',
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             Text('Email: $email'),
             const SizedBox(height: 8),

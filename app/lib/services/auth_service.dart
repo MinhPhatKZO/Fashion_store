@@ -17,11 +17,7 @@ class AuthService {
       final response = await http.post(
         Uri.parse('$baseUrl/register'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'name': name,
-          'email': email,
-          'password': password,
-        }),
+        body: json.encode({'name': name, 'email': email, 'password': password}),
       );
 
       final data = json.decode(response.body);
@@ -42,10 +38,7 @@ class AuthService {
       final response = await http.post(
         Uri.parse('$baseUrl/login'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'email': email,
-          'password': password,
-        }),
+        body: json.encode({'email': email, 'password': password}),
       );
 
       final data = json.decode(response.body);

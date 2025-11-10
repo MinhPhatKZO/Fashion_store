@@ -33,7 +33,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> handleLogin() async {
-    if (emailController.text.trim().isEmpty || passwordController.text.isEmpty) {
+    if (emailController.text.trim().isEmpty ||
+        passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng điền đầy đủ thông tin')),
       );
@@ -67,9 +68,9 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       setState(() => loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
@@ -89,8 +90,10 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text("Login Now",
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600)),
+            const Text(
+              "Login Now",
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 30),
             TextField(
               controller: emailController,
@@ -122,7 +125,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Text("Login"),
             ),
@@ -136,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
             GestureDetector(
               onTap: () => Navigator.pushNamed(context, "/register"),
               child: const Text("Don’t have an account ? Register"),
-            )
+            ),
           ],
         ),
       ),
