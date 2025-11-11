@@ -6,7 +6,7 @@ import { Toaster } from 'react-hot-toast';
 import { store } from './store';
 import { initializeAuth } from './store/slices/authSlice';
 import { loadCartFromStorage } from './store/slices/cartSlice';
-
+import { CartProvider } from './context/CartContext';
 // Components
 import Layout from './components/Layout/Layout';
 import Home from './pages/Home';
@@ -21,12 +21,9 @@ import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
 import Wishlist from './pages/Wishlist';
 import NotFound from './pages/NotFound';
-import AdminLayout from './pages/admin/AdminLayout';
-import AdminDashboard from './pages/admin/Dashboard';
-import SellerLayout from './pages/seller/SellerLayout';
-import SellerDashboard from './pages/seller/Dashboard';
-import ProtectedRoute from './routes/ProtectedRoute';
-
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -47,73 +44,38 @@ function App() {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        <Router>
-          <div className="App">
-            <Routes>
-              <Route path="/" element={<Layout />}>
-                {/* Public Routes */}
-                <Route index element={<Home />} />
-                <Route path="products" element={<Products />} />
-                <Route path="products/:id" element={<ProductDetail />} />
-                <Route path="cart" element={<Cart />} />
-                <Route path="login" element={<Login />} />
-                <Route path="register" element={<Register />} />
-
-                {/* Protected Routes */}
-                <Route path="checkout" element={<ProtectedRoute element={<Checkout />} />} />
-                <Route path="profile" element={<ProtectedRoute element={<Profile />} />} />
-                <Route path="orders" element={<ProtectedRoute element={<Orders />} />} />
-                <Route path="orders/:id" element={<ProtectedRoute element={<OrderDetail />} />} />
-                <Route path="wishlist" element={<ProtectedRoute element={<Wishlist />} />} />
-
-                {/* Admin-only Route */}
-                <Route
-                  path="admin"
-                  element={<ProtectedRoute element={<AdminLayout />} requiredRole="admin" />}
-                >
-                  <Route index element={<AdminDashboard />} />
-                  <Route path="dashboard" element={<AdminDashboard />} />
-                  {/* <Route path="products" element={<AdminProducts />} />
-                  <Route path="orders" element={<AdminOrders />} />
-                  <Route path="users" element={<AdminUsers />} /> */}
+        <CartProvider>
+          <Router>
+            <div className="App">
+              <Routes>
+                <Route path="/" element={<Layout />}>
+                  <Route index element={<Home />} />
+                  <Route path="products" element={<Products />} />
+                  <Route path="products/:id" element={<ProductDetail />} />
+                  <Route path="cart" element={<Cart />} />
+                  <Route path="checkout" element={<Checkout />} />
+                  <Route path="login" element={<Login />} />
+                  <Route path="register" element={<Register />} />
+                  <Route path="profile" element={<Profile />} />
+                  <Route path="orders" element={<Orders />} />
+                  <Route path="orders/:id" element={<OrderDetail />} />
+                  <Route path="wishlist" element={<Wishlist />} />
+                  <Route path="*" element={<NotFound />} />
                 </Route>
-                {/* Seller-only Route */}
-                <Route
-                  path="seller"
-                  element={<ProtectedRoute element={<SellerLayout />} requiredRole="seller" />}
-                >
-                  <Route index element={<SellerDashboard />} />
-                  <Route path="dashboard" element={<SellerDashboard />} />
-                  {/* <Route path="products" element={<SellerProducts />} />
-                  <Route path="orders" element={<SellerOrders />} />
-                  <Route path="profile" element={<SellerProfile />} /> */}
-                </Route>
+              </Routes>
 
-                {/* Error Routes */}
-                <Route path="*" element={<NotFound />} />
-              </Route>
-            </Routes>
-
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: '#363636',
-                  color: '#fff',
-                },
-                success: {
-                  duration: 3000,
-                  iconTheme: { primary: '#10B981', secondary: '#fff' },
-                },
-                error: {
-                  duration: 5000,
-                  iconTheme: { primary: '#EF4444', secondary: '#fff' },
-                },
-              }}
-            />
-          </div>
-        </Router>
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
+                  style: { background: '#363636', color: '#fff' },
+                  success: { duration: 3000, iconTheme: { primary: '#10B981', secondary: '#fff' } },
+                  error: { duration: 5000, iconTheme: { primary: '#EF4444', secondary: '#fff' } },
+                }}
+              />
+            </div>
+          </Router>
+        </CartProvider>
       </QueryClientProvider>
     </Provider>
   );

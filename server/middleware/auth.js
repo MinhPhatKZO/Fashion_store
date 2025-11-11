@@ -1,57 +1,27 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const jwt = require("jsonwebtoken");
 
-// Authentication middleware
-const auth = async (req, res, next) => {
+const auth = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Không có token" });
+  }
+
+  const token = authHeader.split(" ")[1];
   try {
-    // Get token from header
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-
-    if (!token) {
-      return res.status(401).json({ message: 'No token, authorization denied' });
-    }
-
-    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret');
-    
-    // Find user
-    const user = await User.findById(decoded.id).select('-password');
-    
-    if (!user) {
-      return res.status(401).json({ message: 'User not found' });
-    }
-
-    if (!user.isActive) {
-      return res.status(403).json({ message: 'Account is deactivated' });
-    }
-
-    // Add user to request
-    req.user = { id: user._id, role: user.role };
-    req.userId = user._id;
-    
+    req.user = decoded;
+    req.userId = decoded.id; // giữ dòng này
     next();
   } catch (err) {
-    console.error('Auth middleware error:', err);
-    res.status(401).json({ message: 'Token is not valid' });
+    return res.status(401).json({ message: "Token không hợp lệ" });
   }
 };
 
-// Admin authorization middleware
 const adminAuth = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
-    next();
-  } else {
-    res.status(403).json({ message: 'Access denied. Admin only.' });
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).json({ message: "Không đủ quyền truy cập" });
   }
+  next();
 };
 
-// Seller authorization middleware
-const sellerAuth = (req, res, next) => {
-  if (req.user && (req.user.role === 'seller' || req.user.role === 'admin')) {
-    next();
-  } else {
-    res.status(403).json({ message: 'Access denied. Seller only.' });
-  }
-};
-
-module.exports = { auth, adminAuth, sellerAuth };
+module.exports = { auth, adminAuth };
