@@ -244,7 +244,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ## 📞 Liên hệ
 
-- Email: info@fashionstore.com
+- Email: minhphatdthw@gmail.com
 - Website: https://fashionstore.com
 
 ## 🙏 Acknowledgments
