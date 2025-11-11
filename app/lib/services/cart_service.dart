@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/cart_item.dart';
@@ -46,19 +45,33 @@ class CartService extends ChangeNotifier {
     await prefs.setString('cart_items', encoded);
   }
 
-  Future<void> add(Product product, {Map<String, dynamic>? variant, int quantity = 1}) async {
-    final idx = _items.indexWhere((it) => it.product.id == product.id && mapEquals(it.variant, variant));
+  Future<void> add(
+    Product product, {
+    Map<String, dynamic>? variant,
+    int quantity = 1,
+  }) async {
+    final idx = _items.indexWhere(
+      (it) => it.product.id == product.id && mapEquals(it.variant, variant),
+    );
     if (idx >= 0) {
       _items[idx].quantity += quantity;
     } else {
-      _items.add(CartItem(product: product, variant: variant, quantity: quantity));
+      _items.add(
+        CartItem(product: product, variant: variant, quantity: quantity),
+      );
     }
     await persist();
     notifyListeners();
   }
 
-  Future<void> updateQuantity(Product product, int quantity, {Map<String, dynamic>? variant}) async {
-    final idx = _items.indexWhere((it) => it.product.id == product.id && mapEquals(it.variant, variant));
+  Future<void> updateQuantity(
+    Product product,
+    int quantity, {
+    Map<String, dynamic>? variant,
+  }) async {
+    final idx = _items.indexWhere(
+      (it) => it.product.id == product.id && mapEquals(it.variant, variant),
+    );
     if (idx >= 0) {
       _items[idx].quantity = quantity;
       if (_items[idx].quantity <= 0) {
@@ -70,7 +83,9 @@ class CartService extends ChangeNotifier {
   }
 
   Future<void> remove(Product product, {Map<String, dynamic>? variant}) async {
-    _items.removeWhere((it) => it.product.id == product.id && mapEquals(it.variant, variant));
+    _items.removeWhere(
+      (it) => it.product.id == product.id && mapEquals(it.variant, variant),
+    );
     await persist();
     notifyListeners();
   }

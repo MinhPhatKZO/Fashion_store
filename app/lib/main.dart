@@ -34,7 +34,7 @@ class FashionStoreApp extends StatelessWidget {
         '/login': (_) => const LoginScreen(),
         '/register': (_) => const RegisterScreen(),
         '/home': (_) => const HomeScreen(),
-  '/cart': (_) => const CartScreen(),
+        '/cart': (_) => const CartScreen(),
         '/admin': (_) => const AdminScreen(),
         '/seller': (_) => const SellerScreen(),
       },
