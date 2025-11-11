@@ -1,0 +1,28 @@
+// src/routes/ProtectedRoute.tsx
+import React from 'react';
+import { Navigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
+
+interface ProtectedRouteProps {
+  element: React.ReactElement;
+  requiredRole?: 'admin' | 'user' | 'seller';
+}
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element, requiredRole }) => {
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+
+  if (!isAuthenticated) {
+    // Nếu chưa đăng nhập → về trang login
+    return <Navigate to="/login" replace />;
+  }
+
+  if (requiredRole && user?.role !== requiredRole) {
+    // Nếu không đủ quyền → về trang chủ
+    return <Navigate to="/" replace />;
+  }
+
+  return element;
+};
+
+export default ProtectedRoute;

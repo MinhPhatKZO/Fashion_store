@@ -4,7 +4,7 @@ export interface User {
   email: string;
   phone?: string;
   avatar?: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' |'seller';
   addresses: Address[];
   wishlist: string[];
   isActive: boolean;
