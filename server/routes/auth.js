@@ -4,6 +4,7 @@ const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const { auth, adminAuth } = require('../middleware/auth');
 
+
 const router = express.Router();
 
 // @route   POST /api/auth/register

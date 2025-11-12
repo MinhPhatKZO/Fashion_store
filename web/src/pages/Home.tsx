@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import ProductCard from "../components/ProductCard";
 import Categories, { Category } from "../components/Categories";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+import Slider from "react-slick";
 
 interface Image {
   url: string;
@@ -128,6 +131,33 @@ const Home: React.FC = () => {
         >
           Khám phá ngay
         </a>
+         <div className="max-w-5xl mx-auto mt-12">
+    <Slider
+      autoplay
+      autoplaySpeed={3000}
+      infinite
+      dots
+      arrows={false}
+      speed={1000}
+      cssEase="ease-in-out"
+      pauseOnHover={false}
+    >
+      {[
+        "https://images.unsplash.com/photo-1521335629791-ce4aec67dd47",
+        "https://images.unsplash.com/photo-1521334884684-d80222895322",
+        "https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb",
+        "https://images.unsplash.com/photo-1520975922320-37a0c390bca4"
+      ].map((img, index) => (
+        <div key={index}>
+          <img
+            src={img + "?auto=format&fit=crop&w=1600&q=80"}
+            alt={`Fashion banner ${index + 1}`}
+            className="w-full h-80 object-cover rounded-2xl shadow-lg transition-transform duration-500 hover:scale-[1.02]"
+          />
+        </div>
+      ))}
+    </Slider>
+  </div>
       </section>
 
       {/* Categories Section */}
