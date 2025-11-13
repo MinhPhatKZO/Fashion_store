@@ -23,6 +23,9 @@ class _HomeScreenState extends State<HomeScreen> {
   String email = '';
   String role = '';
 
+  // Bottom Navigation state
+  int _selectedIndex = 0;
+
   // Product loading states
   List<Product> products = [];
   bool isLoadingProducts = true;
@@ -38,8 +41,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _autoPlayTimer;
   bool _autoPlay = true;
   Duration _autoPlayInterval = const Duration(seconds: 5);
-
-  // small local helpers
 
   @override
   void initState() {
@@ -166,6 +167,114 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _onBottomNavTap(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    // Handle navigation based on selected index
+    switch (index) {
+      case 0:
+        // Home - do nothing, already on home
+        break;
+      case 1:
+        // Categories - implement later
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Categories - Coming soon!')),
+        );
+        break;
+      case 2:
+        // Favorites - implement later
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Favorites - Coming soon!')),
+        );
+        break;
+      case 3:
+        // Profile - implement later
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile - Coming soon!')),
+        );
+        break;
+    }
+  }
+
+  // Get body content based on selected tab
+  Widget _getBodyContent() {
+    switch (_selectedIndex) {
+      case 0:
+        return HomeBody(
+          products: products,
+          isLoadingProducts: isLoadingProducts,
+          productsError: productsError,
+          pageController: _pageController,
+          currentPage: _currentPage,
+          onPageChanged: (i) {
+            setState(() {
+              _currentPage = i;
+            });
+            _startAutoPlayIfNeeded();
+          },
+          onPrev: _prevPage,
+          onNext: _nextPage,
+          loadProducts: _loadProducts,
+          onProductTap: _onProductTap,
+        );
+      case 1:
+        return _buildPlaceholderPage('Categories', Icons.category);
+      case 2:
+        return _buildPlaceholderPage('Favorites', Icons.favorite);
+      case 3:
+        return _buildPlaceholderPage('Profile', Icons.person);
+      default:
+        return HomeBody(
+          products: products,
+          isLoadingProducts: isLoadingProducts,
+          productsError: productsError,
+          pageController: _pageController,
+          currentPage: _currentPage,
+          onPageChanged: (i) {
+            setState(() {
+              _currentPage = i;
+            });
+            _startAutoPlayIfNeeded();
+          },
+          onPrev: _prevPage,
+          onNext: _nextPage,
+          loadProducts: _loadProducts,
+          onProductTap: _onProductTap,
+        );
+    }
+  }
+
+  // Placeholder page for unimplemented tabs
+  Widget _buildPlaceholderPage(String title, IconData icon) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 80, color: kPrimaryColor),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Coming soon!',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Calculate total items in cart
@@ -260,22 +369,39 @@ class _HomeScreenState extends State<HomeScreen> {
         onNavigateToCart: _navigateToCart,
         onLogout: _logout,
       ),
-      body: HomeBody(
-        products: products,
-        isLoadingProducts: isLoadingProducts,
-        productsError: productsError,
-        pageController: _pageController,
-        currentPage: _currentPage,
-        onPageChanged: (i) {
-          setState(() {
-            _currentPage = i;
-          });
-          _startAutoPlayIfNeeded();
-        },
-        onPrev: _prevPage,
-        onNext: _nextPage,
-        loadProducts: _loadProducts,
-        onProductTap: _onProductTap,
+      body: _getBodyContent(),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onBottomNavTap,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: kPrimaryColor,
+        unselectedItemColor: Colors.grey[600],
+        selectedFontSize: 12,
+        unselectedFontSize: 12,
+        elevation: 8,
+        backgroundColor: Colors.white,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.category_outlined),
+            activeIcon: Icon(Icons.category),
+            label: 'Categories',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite_border),
+            activeIcon: Icon(Icons.favorite),
+            label: 'Favorites',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
       ),
     );
   }
