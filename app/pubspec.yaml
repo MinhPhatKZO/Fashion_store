@@ -26,6 +26,9 @@ dependencies:
   # animation (dùng cho loading sau này)
   lottie: ^3.1.2
 
+  # ĐÃ THÊM: Dùng để định dạng ngày tháng và tiền tệ (ví dụ: tiền Việt Nam)
+  intl: ^0.18.1 
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
