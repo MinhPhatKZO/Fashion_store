@@ -8,29 +8,40 @@ class AuthService {
   // Nếu chạy trên thiết bị thật: http://YOUR_IP:5000/api/auth
 
   /// Register new user
-  Future<Map<String, dynamic>> register(
-    String name,
-    String email,
-    String password,
-  ) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/register'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'name': name, 'email': email, 'password': password}),
-      );
+ Future<Map<String, dynamic>> register(
+  String name,
+  String email,
+  String password, {
+  String? phone,
+  String? address,
+}) async {
+  try {
+    final body = {
+      'name': name,
+      'email': email,
+      'password': password,
+    };
 
-      final data = json.decode(response.body);
+    if (phone != null) body['phone'] = phone;
+    if (address != null) body['address'] = address;
 
-      if (response.statusCode == 201) {
-        return data;
-      } else {
-        throw Exception(data['message'] ?? 'Registration failed');
-      }
-    } catch (e) {
-      throw Exception('Đăng ký thất bại: $e');
+    final response = await http.post(
+      Uri.parse('$baseUrl/register'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(body),
+    );
+
+    final data = json.decode(response.body);
+
+    if (response.statusCode == 201) {
+      return data;
+    } else {
+      throw Exception(data['message'] ?? 'Registration failed');
     }
+  } catch (e) {
+    throw Exception('Đăng ký thất bại: $e');
   }
+}
 
   /// Login user
   Future<Map<String, dynamic>> login(String email, String password) async {
