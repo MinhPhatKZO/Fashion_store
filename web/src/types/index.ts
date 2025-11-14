@@ -221,3 +221,12 @@ export interface CartState {
   itemCount: number;
 }
 
+export interface Promotion {
+  _id: string;
+  code: string;
+  description: string;
+  discountPercent: number;
+  startDate: string;
+  endDate: string;
+  active: boolean;
+}

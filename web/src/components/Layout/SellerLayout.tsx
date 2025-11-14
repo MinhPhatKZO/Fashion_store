@@ -1,12 +1,12 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import Header from './Header';
+import SellerHeader from './SellerHeader';
 import Footer from './Footer';
 
-const Layout: React.FC = () => {
+const SellerLayout: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      <SellerHeader />
       <main className="flex-1">
         <Outlet />
       </main>
@@ -15,7 +15,4 @@ const Layout: React.FC = () => {
   );
 };
 
-export default Layout;
-
-
-
+export default SellerLayout;
