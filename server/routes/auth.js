@@ -37,7 +37,7 @@ router.post(
         name,
         email,
         password,
-        role: 'customer' // Default role
+        role: 'user' // Default role
       });
 
       await user.save();

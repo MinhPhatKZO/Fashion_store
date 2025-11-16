@@ -1,6 +1,8 @@
 import React, { useState, ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useDispatch } from "react-redux";
+import { setUser, setToken } from "../store/slices/authSlice";
 
 interface Message {
   text: string;
@@ -12,7 +14,9 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -34,31 +38,35 @@ export default function Login() {
       if (res.ok) {
         const { token, user } = data;
 
-        // ✅ Lưu thông tin vào localStorage
+        // ✅ Lưu vào localStorage
         localStorage.setItem("token", token);
         localStorage.setItem("userID", user.id || user._id);
         localStorage.setItem("userName", user.name);
+        localStorage.setItem("userRole", user.role); // thêm role
 
-        // ✅ Nếu chưa có giỏ hàng cục bộ, tạo mới
+        // ✅ Cập nhật Redux state
+        dispatch(setUser(user));
+        dispatch(setToken(token));
+
+        // ✅ Tạo giỏ hàng nếu chưa có
         if (!localStorage.getItem("localCart")) {
-          localStorage.setItem(
-            "localCart",
-            JSON.stringify({ items: [], priceTotal: 0 })
-          );
+          localStorage.setItem("localCart", JSON.stringify({ items: [], priceTotal: 0 }));
         }
 
         setMessage({ text: "Đăng nhập thành công!", type: "success" });
 
-        // ⏳ Chờ 500ms rồi điều hướng về trang chủ
+        // ⏳ Điều hướng ngay, không reload
         setTimeout(() => {
-          navigate("/");
-          window.location.reload(); // Cập nhật header/navbar
+          // Nếu là admin, điều hướng vào admin dashboard
+          if (user.role === "admin") navigate("/admin");
+          else if (user.role === "seller") navigate("/seller");
+          else navigate("/"); // user bình thường
         }, 500);
       } else {
         setMessage({
           text:
             data.message ||
-            "Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.",
+            "Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu.",
           type: "error",
         });
       }
