@@ -1,15 +1,21 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../models/product.dart';
 import '../../services/product_service.dart';
 import '../../services/cart_service.dart';
-import 'home_style.dart';
+
+import 'home_style.dart'; // Giả sử kPrimaryColor được định nghĩa ở đây
 import '../product/product_detail_screen.dart';
 import '../cart/cart_screen.dart';
 import 'widgets/home_body.dart';
 import 'widgets/home_drawer.dart';
+
+// NEW IMPORTS
+import '../category/category_screen.dart';
+import '../favorite/favorites_screen.dart';
+import '../profile/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,10 +29,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String email = '';
   String role = '';
 
-  // Bottom Navigation state
   int _selectedIndex = 0;
 
-  // Product loading states
   List<Product> products = [];
   bool isLoadingProducts = true;
   String? productsError;
@@ -34,9 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final ProductService _productService = ProductService();
   final CartService _cartService = CartService.instance;
 
-  // Page controller for product pager
   final PageController _pageController = PageController(viewportFraction: 0.48);
-  // pager state
   int _currentPage = 0;
   Timer? _autoPlayTimer;
   bool _autoPlay = true;
@@ -60,9 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onCartChanged() {
-    if (mounted) {
-      setState(() {});
-    }
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadProfile() async {
@@ -87,7 +87,6 @@ class _HomeScreenState extends State<HomeScreen> {
         products = fetchedProducts;
         isLoadingProducts = false;
       });
-      // start or reset autoplay when products available
       _startAutoPlayIfNeeded();
     } catch (e) {
       setState(() {
@@ -110,8 +109,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _autoPlayTimer?.cancel();
     if (!_autoPlay || products.isEmpty) return;
     _autoPlayTimer = Timer.periodic(_autoPlayInterval, (_) {
-      if (products.isEmpty) return;
       final next = (_currentPage + 1) % products.length;
+
       if (mounted) {
         _pageController.animateToPage(
           next,
@@ -120,15 +119,6 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
     });
-  }
-
-  Future<void> _logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
-    await prefs.remove('username');
-    await prefs.remove('email');
-    await prefs.remove('role');
-    Navigator.pushReplacementNamed(context, '/login');
   }
 
   void _navigateToCart() {
@@ -140,9 +130,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _prevPage() {
     if (products.isEmpty) return;
-    final prev = (_currentPage - 1) < 0
-        ? products.length - 1
-        : _currentPage - 1;
+    final prev = (_currentPage - 1) < 0 ? products.length - 1 : _currentPage - 1;
+
     _pageController.animateToPage(
       prev,
       duration: const Duration(milliseconds: 300),
@@ -153,6 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _nextPage() {
     if (products.isEmpty) return;
     final next = (_currentPage + 1) % products.length;
+
     _pageController.animateToPage(
       next,
       duration: const Duration(milliseconds: 300),
@@ -167,38 +157,27 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // CHỈ ĐỔI TAB — navigation thật sẽ ở _getBodyContent()
   void _onBottomNavTap(int index) {
+    // Nếu chuyển sang tab hiện tại thì không làm gì
+    if (_selectedIndex == index) return;
+    
+    // Nếu bạn muốn hủy auto play khi chuyển khỏi Home (tab 0)
+    if (_selectedIndex == 0) {
+      _autoPlayTimer?.cancel();
+    }
+    
+    // Nếu chuyển về Home (tab 0), bắt đầu lại auto play
+    if (index == 0) {
+      _startAutoPlayIfNeeded();
+    }
+
     setState(() {
       _selectedIndex = index;
     });
-
-    // Handle navigation based on selected index
-    switch (index) {
-      case 0:
-        // Home - do nothing, already on home
-        break;
-      case 1:
-        // Categories - implement later
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Categories - Coming soon!')),
-        );
-        break;
-      case 2:
-        // Favorites - implement later
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Favorites - Coming soon!')),
-        );
-        break;
-      case 3:
-        // Profile - implement later
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile - Coming soon!')),
-        );
-        break;
-    }
   }
 
-  // Get body content based on selected tab
+  // MỞ TRANG THEO TAB
   Widget _getBodyContent() {
     switch (_selectedIndex) {
       case 0:
@@ -209,9 +188,9 @@ class _HomeScreenState extends State<HomeScreen> {
           pageController: _pageController,
           currentPage: _currentPage,
           onPageChanged: (i) {
-            setState(() {
-              _currentPage = i;
-            });
+            setState(() => _currentPage = i);
+            // Khởi động lại timer sau khi người dùng tương tác
+            _autoPlayTimer?.cancel();
             _startAutoPlayIfNeeded();
           },
           onPrev: _prevPage,
@@ -219,13 +198,22 @@ class _HomeScreenState extends State<HomeScreen> {
           loadProducts: _loadProducts,
           onProductTap: _onProductTap,
         );
+
       case 1:
-        return _buildPlaceholderPage('Categories', Icons.category);
+        // Đã sửa lỗi: Cung cấp categoryName cho màn hình "Mall" / "All Products"
+        return const CategoryScreen(
+          categoryName: 'All Products', // **Cần cung cấp tham số bắt buộc**
+          categoryId: null,             // ID là null để CategoryScreen tải tất cả
+        );
+
       case 2:
-        return _buildPlaceholderPage('Favorites', Icons.favorite);
+        return const FavoritesScreen();
+
       case 3:
-        return _buildPlaceholderPage('Profile', Icons.person);
+        return ProfileScreen(username: username, email: email);
+
       default:
+        // Thay vì trả về HomeScreen (gây lặp vô hạn), trả về HomeBody
         return HomeBody(
           products: products,
           isLoadingProducts: isLoadingProducts,
@@ -233,9 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
           pageController: _pageController,
           currentPage: _currentPage,
           onPageChanged: (i) {
-            setState(() {
-              _currentPage = i;
-            });
+            setState(() => _currentPage = i);
             _startAutoPlayIfNeeded();
           },
           onPrev: _prevPage,
@@ -246,38 +232,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Placeholder page for unimplemented tabs
-  Widget _buildPlaceholderPage(String title, IconData icon) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 80, color: kPrimaryColor),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Coming soon!',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Calculate total items in cart
     final cartItemCount = _cartService.items.fold<int>(
       0,
       (sum, item) => sum + item.quantity,
@@ -294,38 +250,21 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Text(
-              'Mansoury',
-              style: TextStyle(
-                color: kPrimaryColor,
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-              ),
-            ),
-            Text(
-              '.',
-              style: TextStyle(
-                color: kPrimaryColor,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+        title: const Text(
+          'Fashion Store',
+          style: TextStyle(
+            color: kPrimaryColor,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
         actions: [
           Stack(
             children: [
               IconButton(
-                icon: const Icon(
-                  Icons.shopping_cart_outlined,
-                  color: Colors.black87,
-                ),
+                icon: const Icon(Icons.shopping_cart_outlined,
+                    color: Colors.black87),
                 onPressed: _navigateToCart,
               ),
               if (cartItemCount > 0)
@@ -333,13 +272,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   right: 8,
                   top: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade600,
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       '$cartItemCount',
@@ -354,10 +291,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           IconButton(
-            icon: const Icon(
-              Icons.notifications_outlined,
-              color: Colors.black87,
-            ),
+            icon: const Icon(Icons.notifications_outlined,
+                color: Colors.black87),
             onPressed: () {},
           ),
           const SizedBox(width: 4),
@@ -367,7 +302,12 @@ class _HomeScreenState extends State<HomeScreen> {
         username: username,
         email: email,
         onNavigateToCart: _navigateToCart,
-        onLogout: _logout,
+        onLogout: () async {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.clear();
+          // Đảm bảo bạn có route '/login' được định nghĩa trong MaterialApp
+          if (mounted) Navigator.pushReplacementNamed(context, '/login');
+        },
       ),
       body: _getBodyContent(),
       bottomNavigationBar: BottomNavigationBar(
@@ -376,10 +316,6 @@ class _HomeScreenState extends State<HomeScreen> {
         type: BottomNavigationBarType.fixed,
         selectedItemColor: kPrimaryColor,
         unselectedItemColor: Colors.grey[600],
-        selectedFontSize: 12,
-        unselectedFontSize: 12,
-        elevation: 8,
-        backgroundColor: Colors.white,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
@@ -389,7 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.category_outlined),
             activeIcon: Icon(Icons.category),
-            label: 'Categories',
+            label: 'Mall',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.favorite_border),

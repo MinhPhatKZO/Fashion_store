@@ -7,8 +7,6 @@ import '../assets/images.dart';
 
 class ProductService {
   // Tự động chọn baseUrl cho Web hoặc Mobile.
-  // For web, build host dynamically from the current page host so the dev web server
-  // can access the backend running on the same machine (works if backend is bound to 0.0.0.0).
   static String get _webUrl {
     try {
       final host = Uri.base.host; // picks up current page host or IP
@@ -137,29 +135,50 @@ class ProductService {
     }
   }
 
-  /// Lấy sản phẩm theo category
-  Future<List<Product>> getProductsByCategory(
-    String categoryId, {
+  /// Lấy sản phẩm theo category (chấp nhận ID hoặc Name)
+  Future<List<Product>> getProductsByCategory({
+    String? categoryId, // ID danh mục (ưu tiên)
+    String? categoryName, // Tên danh mục, dùng cho tiêu đề và fallback logic
     int limit = 20,
   }) async {
-    final url = Uri.parse(
-      '$baseUrl/api/products/category/$categoryId?limit=$limit',
-    );
+    // 1. Nếu không có ID và Tên là "All Products" (hoặc null), trả về TẤT CẢ
+    final bool isFetchingAll = categoryId == null &&
+        (categoryName == null ||
+            categoryName.toLowerCase().contains('all products'));
 
-    try {
-      final response = await http.get(url);
-
-      if (response.statusCode != 200) {
-        throw Exception('Failed to load products by category');
-      }
-
-      final data = json.decode(response.body);
-      final List productsList = data['products'] ?? data;
-      return productsList.map((e) => Product.fromJson(e)).toList();
-    } catch (e) {
-      print('❌ Error fetching products by category: $e');
-      rethrow;
+    if (isFetchingAll) {
+      print('🌐 Calling getAllProducts() as no specific category filter was provided.');
+      return getAllProducts(limit: limit);
     }
+
+    // 2. Nếu có categoryId, gọi API lọc theo ID
+    if (categoryId != null && categoryId.isNotEmpty) {
+      final url = Uri.parse(
+        '$baseUrl/api/products/category/$categoryId?limit=$limit',
+      );
+      print('🌐 Fetching products by category ID: $url');
+
+      try {
+        final response = await http.get(url);
+
+        if (response.statusCode != 200) {
+          throw Exception(
+            'Failed to load products by category ID (status: ${response.statusCode})',
+          );
+        }
+
+        final data = json.decode(response.body);
+        final List productsList = data['products'] ?? data;
+        return productsList.map((e) => Product.fromJson(e)).toList();
+      } catch (e) {
+        print('❌ Error fetching products by category ID: $e');
+        rethrow;
+      }
+    }
+
+    // 3. Nếu không có ID và không phải "All Products" -> Không làm gì (hoặc tìm kiếm nâng cao bằng tên nếu API hỗ trợ)
+    print('⚠️ Cannot filter by Category Name "$categoryName" without categoryId.');
+    return [];
   }
 
   /// Lấy sản phẩm theo brand
