@@ -65,37 +65,24 @@ router.get('/:id', auth, async (req, res) => {
 // @route   POST /api/orders
 // @desc    Create new order
 // @access  Private
+// Thêm 'momo' vào validate paymentMethod
 router.post('/', auth, [
   body('items').isArray({ min: 1 }).withMessage('Order must have at least one item'),
   body('shippingAddress').isObject().withMessage('Shipping address is required'),
-  body('paymentMethod').isIn(['cod', 'credit_card', 'bank_transfer', 'wallet']).withMessage('Invalid payment method')
+  body('paymentMethod').isIn(['cod', 'credit_card', 'bank_transfer', 'wallet', 'momo']).withMessage('Invalid payment method')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     const { items, shippingAddress, paymentMethod, notes } = req.body;
 
-    // Validate products and calculate totals
+    // Validate products & calculate totals
     let subtotal = 0;
     const orderItems = [];
-
     for (const item of items) {
       const product = await Product.findById(item.product);
-      if (!product || !product.isActive) {
-        return res.status(400).json({ message: `Product ${item.product} not found or inactive` });
-      }
-
-      if (product.variants && product.variants.length > 0) {
-        const variant = product.variants.find(v => 
-          v.size === item.variant?.size && v.color === item.variant?.color
-        );
-        if (!variant || variant.stock < item.quantity) {
-          return res.status(400).json({ message: `Insufficient stock for ${product.name}` });
-        }
-      }
+      if (!product || !product.isActive) return res.status(400).json({ message: `Product ${item.product} not found or inactive` });
 
       const itemTotal = product.price * item.quantity;
       subtotal += itemTotal;
@@ -109,27 +96,15 @@ router.post('/', auth, [
       });
     }
 
-    // Calculate shipping and total
-    const shippingCost = subtotal > 500000 ? 0 : 30000; // Free shipping over 500k
-    const tax = Math.round(subtotal * 0.1); // 10% tax
+    const shippingCost = subtotal > 500000 ? 0 : 30000;
+    const tax = Math.round(subtotal * 0.1);
     const total = subtotal + shippingCost + tax;
 
-    // Create order
-    const order = new Order({
-      user: req.userId,
-      items: orderItems,
-      shippingAddress,
-      paymentMethod,
-      subtotal,
-      shippingCost,
-      tax,
-      total,
-      notes
-    });
-
+    // Tạo order trong DB
+    const order = new Order({ user: req.userId, items: orderItems, shippingAddress, paymentMethod, subtotal, shippingCost, tax, total, notes });
     await order.save();
 
-    // Update product stock
+    // Update stock
     for (const item of orderItems) {
       if (item.variant) {
         await Product.updateOne(
@@ -141,13 +116,64 @@ router.post('/', auth, [
 
     await order.populate('items.product', 'name images price');
 
-    res.status(201).json({
-      message: 'Order created successfully',
-      order
-    });
+    // Nếu chọn MoMo → gọi API MoMo
+    if (paymentMethod === 'momo') {
+      const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+      const crypto = require('crypto');
+
+      const partnerCode = process.env.MOMO_PARTNER_CODE;
+      const accessKey = process.env.MOMO_ACCESS_KEY;
+      const secretKey = process.env.MOMO_SECRET_KEY;
+      const requestId = order._id.toString();
+      const orderId = requestId;
+      const orderInfo = `Thanh toán đơn ${order._id}`;
+      const redirectUrl = process.env.MOMO_RETURN_URL;
+      const ipnUrl = process.env.MOMO_NOTIFY_URL;
+      const requestType = 'payWithMethod';
+      const extraData = '';
+      const lang = 'vi';
+
+      const rawSignature = `accessKey=${accessKey}&amount=${total}&extraData=${extraData}&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${partnerCode}&redirectUrl=${redirectUrl}&requestId=${requestId}&requestType=${requestType}`;
+      const signature = crypto.createHmac('sha256', secretKey).update(rawSignature).digest('hex');
+
+      const requestBody = {
+        partnerCode,
+        partnerName: "YourStore",
+        storeId: "Store001",
+        requestId,
+        amount: total.toString(),
+        orderId,
+        orderInfo,
+        redirectUrl,
+        ipnUrl,
+        lang,
+        requestType,
+        autoCapture: true,
+        extraData,
+        signature
+      };
+
+      const response = await fetch('https://test-payment.momo.vn/v2/gateway/api/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+
+      const momoData = await response.json();
+
+      return res.status(201).json({
+        success: true,
+        message: 'Order created, redirect to MoMo',
+        data: { order, payUrl: momoData.payUrl }
+      });
+    }
+
+    // Nếu không phải momo → trả về bình thường
+    res.status(201).json({ success: true, message: 'Order created successfully', data: order });
+
   } catch (error) {
     console.error('Create order error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 

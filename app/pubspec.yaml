@@ -29,6 +29,9 @@ dependencies:
   # ĐÃ THÊM: Dùng để định dạng ngày tháng và tiền tệ (ví dụ: tiền Việt Nam)
   intl: ^0.18.1 
 
+  # Mới thêm: url_launcher để mở link MoMo hoặc các URL khác
+  url_launcher: ^6.1.12
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -38,5 +41,5 @@ flutter:
   uses-material-design: true
 
   assets: 
-    - assets/products/
+    # - assets/products/   # Commented out because the directory does not exist
     - assets/

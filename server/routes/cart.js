@@ -5,43 +5,29 @@ const auth = require("../middleware/auth");
 
 const router = express.Router();
 
-/* -----------------------------
-   🛒 1. LẤY GIỎ HÀNG CỦA NGƯỜI DÙNG
--------------------------------- */
-router.get("/:userId", async (req, res) => {
+// 1️⃣ Lấy giỏ hàng của người dùng
+router.get("/:userId", auth, async (req, res) => {
   try {
     const cart = await Cart.findOne({ userId: req.params.userId });
-
-    if (!cart) return res.json({ items: [], totalPrice: 0 });
-
-    res.json(cart);
+    if (!cart) return res.json({ success: true, data: { items: [], totalPrice: 0 } });
+    res.json({ success: true, data: cart });
   } catch (error) {
-    console.error("❌ Get cart error:", error.message);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("Get cart error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-/* -----------------------------
-   ➕ 2. THÊM SẢN PHẨM VÀO GIỎ
--------------------------------- */
-router.post("/add", async (req, res) => {
+// 2️⃣ Thêm sản phẩm vào giỏ
+router.post("/add", auth, async (req, res) => {
   try {
     const { userId, productId, quantity = 1 } = req.body;
-
     const product = await Product.findById(productId);
-    if (!product) return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
+    if (!product) return res.status(404).json({ success: false, message: "Product not found" });
 
     let cart = await Cart.findOne({ userId });
+    if (!cart) cart = new Cart({ userId, items: [] });
 
-    if (!cart) {
-      cart = new Cart({ userId, items: [] });
-    }
-
-    // Tìm xem sản phẩm đã có trong giỏ chưa
-    const existingItem = cart.items.find(
-      (item) => item.productId.toString() === productId
-    );
-
+    const existingItem = cart.items.find(i => i.productId.toString() === productId);
     if (existingItem) {
       existingItem.quantity += quantity;
       existingItem.subtotal = existingItem.quantity * existingItem.price;
@@ -56,70 +42,61 @@ router.post("/add", async (req, res) => {
     }
 
     await cart.save();
-    res.json({ message: "Đã thêm sản phẩm vào giỏ hàng", cart });
+    res.json({ success: true, message: "Product added to cart", data: cart });
   } catch (error) {
-    console.error("❌ Add to cart error:", error.message);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("Add to cart error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-/* -----------------------------
-   ✏️ 3. CẬP NHẬT SỐ LƯỢNG
--------------------------------- */
-router.put("/update", async (req, res) => {
+// 3️⃣ Cập nhật số lượng
+router.put("/update", auth, async (req, res) => {
   try {
     const { userId, productId, quantity } = req.body;
-    if (quantity <= 0) {
-      return res.status(400).json({ message: "Số lượng phải lớn hơn 0" });
-    }
+    if (quantity <= 0) return res.status(400).json({ success: false, message: "Quantity must be > 0" });
 
     const cart = await Cart.findOne({ userId });
-    if (!cart) return res.status(404).json({ message: "Không tìm thấy giỏ hàng" });
+    if (!cart) return res.status(404).json({ success: false, message: "Cart not found" });
 
-    const item = cart.items.find((i) => i.productId.toString() === productId);
-    if (!item) return res.status(404).json({ message: "Không tìm thấy sản phẩm trong giỏ" });
+    const item = cart.items.find(i => i.productId.toString() === productId);
+    if (!item) return res.status(404).json({ success: false, message: "Product not in cart" });
 
     item.quantity = quantity;
     item.subtotal = item.price * quantity;
 
     await cart.save();
-    res.json({ message: "Đã cập nhật giỏ hàng", cart });
+    res.json({ success: true, message: "Cart updated", data: cart });
   } catch (error) {
-    console.error("❌ Update cart error:", error.message);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("Update cart error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-/* -----------------------------
-   ❌ 4. XÓA SẢN PHẨM KHỎI GIỎ
--------------------------------- */
-router.delete("/remove", async (req, res) => {
+// 4️⃣ Xóa sản phẩm khỏi giỏ
+router.delete("/remove", auth, async (req, res) => {
   try {
     const { userId, productId } = req.body;
-
     const cart = await Cart.findOne({ userId });
-    if (!cart) return res.status(404).json({ message: "Không tìm thấy giỏ hàng" });
+    if (!cart) return res.status(404).json({ success: false, message: "Cart not found" });
 
-    cart.items = cart.items.filter((i) => i.productId.toString() !== productId);
+    cart.items = cart.items.filter(i => i.productId.toString() !== productId);
     await cart.save();
 
-    res.json({ message: "Đã xóa sản phẩm khỏi giỏ hàng", cart });
+    res.json({ success: true, message: "Product removed", data: cart });
   } catch (error) {
-    console.error("❌ Remove cart item error:", error.message);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("Remove cart item error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-/* -----------------------------
-   🧹 5. XÓA TOÀN BỘ GIỎ HÀNG
--------------------------------- */
-router.delete("/clear/:userId", async (req, res) => {
+// 5️⃣ Xóa toàn bộ giỏ hàng
+router.delete("/clear/:userId", auth, async (req, res) => {
   try {
     await Cart.findOneAndDelete({ userId: req.params.userId });
-    res.json({ message: "Đã xóa toàn bộ giỏ hàng" });
+    res.json({ success: true, message: "Cart cleared" });
   } catch (error) {
-    console.error("❌ Clear cart error:", error.message);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("Clear cart error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
