@@ -63,6 +63,10 @@ class _LoginScreenState extends State<LoginScreen> {
       final userId = res['user']['id'] ?? res['user']['_id'];
       await prefs.setString('userID', userId); 
       await prefs.setString('userName', res['user']['name']);
+      // Lưu role (important for routing to admin/seller/home)
+      if (res['user'] != null && (res['user']['role'] != null)) {
+        await prefs.setString('role', res['user']['role']);
+      }
       
       // 2. Kiểm tra và tạo giỏ hàng cục bộ nếu chưa có
       if (prefs.getString('localCart') == null) {
