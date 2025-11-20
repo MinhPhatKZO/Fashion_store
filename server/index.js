@@ -3,49 +3,60 @@ const connectDB = require('./config/db');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
-dotenv.config();
+// ==================== Load env.example ====================
+const envPath = path.join(__dirname, '..', 'env.example');
 
-// Kết nối database
+if (!fs.existsSync(envPath)) {
+  console.error(`❌ File env.example không tồn tại tại: ${envPath}`);
+  process.exit(1);
+}
+
+const result = dotenv.config({ path: envPath });
+
+if (result.error) {
+  console.error('❌ Failed to load env.example:', result.error);
+  process.exit(1);
+} else {
+  console.log('✅ env.example loaded:', Object.keys(result.parsed));
+}
+
+// ==================== Kiểm tra VNPAY config ====================
+const requiredVnpayEnv = ['VNP_TMNCODE', 'VNP_HASHSECRET', 'VNP_URL', 'VNP_RETURNURL'];
+const missingVnpayEnv = requiredVnpayEnv.filter(key => !process.env[key]);
+
+if (missingVnpayEnv.length > 0) {
+  console.error(`❌ VNPAY config missing: ${missingVnpayEnv.join(', ')}`);
+  process.exit(1);
+}
+
+// ==================== Kết nối MongoDB ====================
+console.log('🔹 Connecting to MongoDB at:', process.env.MONGODB_URI);
 connectDB();
 
+// ==================== Khởi tạo Express ====================
 const app = express();
 
-// Middleware
-app.use(cors()); // cho phép CORS
-app.use(express.json()); // parse JSON body
-app.use(express.urlencoded({ extended: true })); // parse urlencoded body
-
-// Static folder (uploads)
+// ==================== Middleware ====================
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ==================== Routes ====================
-// Auth
 app.use('/api/auth', require('./routes/auth'));
-
-// Categories
 app.use('/api/categories', require('./routes/categories'));
-
-// Products
 app.use('/api/products', require('./routes/products'));
-
-// Orders
 app.use('/api/orders', require('./routes/orders'));
-
-// Reviews
 app.use('/api/reviews', require('./routes/reviews'));
-
-// Users
 app.use('/api/users', require('./routes/users'));
-
-// Upload
 app.use('/api/upload', require('./routes/upload'));
-
-// Admin
 app.use('/api/admin', require('./routes/admin'));
 
-// MoMo Payment API
-app.use('/api/momo', require('./routes/momo')); // route mới cho MoMo
+// Payment APIs
+app.use('/api/momo', require('./routes/momo'));
+app.use('/api/vnpay', require('./routes/vnpay'));
 
 // ==================== Error Handling ====================
 app.use((err, req, res, next) => {
@@ -56,8 +67,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ==================== Server ====================
+// ==================== Start server ====================
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`✅ Server running at http://localhost:${PORT}`);
 });

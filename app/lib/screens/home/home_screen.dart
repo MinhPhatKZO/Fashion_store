@@ -38,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final ProductService _productService = ProductService();
   final CartService _cartService = CartService.instance;
 
-  final PageController _pageController = PageController(viewportFraction: 0.48);
+  final PageController _pageController = PageController(viewportFraction: 0.48); // roll ngang
   int _currentPage = 0;
   Timer? _autoPlayTimer;
   bool _autoPlay = true;
@@ -104,6 +104,8 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
   }
+
+  // chuyển sang m
 
   void _startAutoPlayIfNeeded() {
     _autoPlayTimer?.cancel();
@@ -200,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
         );
 
       case 1:
-        // Đã sửa lỗi: Cung cấp categoryName cho màn hình "Mall" / "All Products"
+        // Cung cấp categoryName cho màn hình "Mall" / "All Products"
         return const CategoryScreen(
           categoryName: 'All Products', // **Cần cung cấp tham số bắt buộc**
           categoryId: null,             // ID là null để CategoryScreen tải tất cả

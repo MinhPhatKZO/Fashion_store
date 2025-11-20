@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../services/momo_service.dart';
+import '../../services/vnpay_service.dart';
 import '../../services/cart_service.dart';
 
 enum PaymentMethod { cod, momo, vnpay }
@@ -20,6 +21,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+
+  // Thêm dropdown cho ngân hàng VNPAY (optional)
+  String? _selectedBankCode;
+  final List<Map<String, String>> _vnpayBanks = [
+    {'code': '', 'name': 'Cổng thanh toán VNPAYQR'},
+    {'code': 'VNPAYQR', 'name': 'Thanh toán qua ứng dụng hỗ trợ VNPAYQR'},
+    {'code': 'VNBANK', 'name': 'Thẻ ATM - Tài khoản ngân hàng nội địa'},
+    {'code': 'INTCARD', 'name': 'Thẻ thanh toán quốc tế'},
+  ];
 
   @override
   void dispose() {
@@ -107,10 +117,91 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Future<void> _processVNPayPayment() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Đang chuẩn bị thanh toán VNPay...')),
+    if (_cart.items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Giỏ hàng trống')),
+      );
+      return;
+    }
+
+    // Hiển thị loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
     );
-    // TODO: Implement VNPay payment
+
+    try {
+      final service = VNPayService();
+      final total = _cart.subTotal + 20; // subtotal + shipping
+      final amount = total.toStringAsFixed(0); // VNPAY yêu cầu số nguyên
+      final orderInfo = "Thanh toan don hang - ${_phoneController.text}";
+
+      print('🔹 VNPAY Payment Request:');
+      print('   Amount: $amount VND');
+      print('   Order Info: $orderInfo');
+      print('   Bank Code: $_selectedBankCode');
+
+      final payment = await service.createPayment(
+        amount: amount,
+        orderInfo: orderInfo,
+        bankCode: _selectedBankCode,
+        language: 'vn',
+      );
+
+      // Đóng loading dialog
+      if (mounted) Navigator.of(context).pop();
+
+      if (payment != null && payment.success && payment.paymentUrl.isNotEmpty) {
+        print('✅ VNPAY Payment URL: ${payment.paymentUrl}');
+        
+        final url = Uri.parse(payment.paymentUrl);
+        if (await canLaunchUrl(url)) {
+          await launchUrl(url, mode: LaunchMode.externalApplication);
+          
+          // TODO: Lưu thông tin đơn hàng vào database
+          // Gọi API tạo order với status "pending"
+          // Khi VNPAY callback về vnpay_return, cập nhật status thành "paid"
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Đang chuyển đến trang thanh toán VNPAY...'),
+                backgroundColor: Colors.blue,
+              ),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Không thể mở liên kết VNPAY')),
+            );
+          }
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                payment?.message ?? 'Thanh toán VNPAY thất bại',
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Đóng loading nếu có lỗi
+      if (mounted) Navigator.of(context).pop();
+      
+      print('❌ VNPAY Payment Error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi kết nối: $e')),
+        );
+      }
+    }
   }
 
   String _getPaymentMethodName(PaymentMethod method) {
@@ -248,6 +339,43 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   return null;
                 },
               ),
+              
+              // ✅ Thêm dropdown chọn ngân hàng cho VNPAY
+              if (_selectedPaymentMethod == PaymentMethod.vnpay) ...[
+                const SizedBox(height: 16),
+                const Text(
+                  'Chọn phương thức thanh toán (Tùy chọn)',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: _selectedBankCode,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.account_balance),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  hint: const Text('Chọn phương thức'),
+                  items: _vnpayBanks.map((bank) {
+                    return DropdownMenuItem<String>(
+                      value: bank['code'],
+                      child: Text(
+                        bank['name']!,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedBankCode = value;
+                    });
+                  },
+                ),
+              ],
             ],
           ),
         ),

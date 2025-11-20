@@ -5,7 +5,6 @@ import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/admin/admin_screen.dart';
-import 'screens/seller/seller_screen.dart';
 import 'screens/cart/cart_screen.dart';
 
 void main() {
@@ -35,9 +34,7 @@ class FashionStoreApp extends StatelessWidget {
         '/register': (_) => const RegisterScreen(),
         '/home': (_) => const HomeScreen(),
         '/cart': (_) => const CartScreen(),
-        '/admin': (_) => const AdminScreen(),
-        '/seller': (_) => const SellerScreen(),
-      },
+        '/admin': (_) => const AdminScreen(),     },
     );
   }
 }
