@@ -56,6 +56,7 @@ export const authAPI = {
     api.put<ApiResponse<{ message: string }>>('/auth/change-password', data),
 };
 
+
 // Products API
 export const productsAPI = {
   getProducts: (params?: {
@@ -277,79 +278,8 @@ export const adminAPI = {
     totalRevenue: number;
     totalOrders: number;
   }>>>("/admin/seller-revenue", { params }),
-
-//quản lý brand seller
-  getAllBrands: () => api.get("/admin/brands"),
-  createBrand: (data: any) => api.post("/admin/brands", data),
-  deleteBrand: (id: string) => api.delete(`/admin/brands/${id}`),
-  getBrandDashboard: () => api.get("/admin/brand-dashboard"),
-  assignBrand: (sellerId: string, brandId: string) =>
-    api.post<ApiResponse<{ brand: any }>>("/admin/assign-brand", { sellerId, brandId }),
 };
 
-// ------------------------ Seller API ------------------------
-export const sellerAPI = {
-  // Orders
-  getOrders: (params?: { page?: number; limit?: number; status?: string }) =>
-    api.get<ApiResponse<PaginationResponse<Order>>>('/seller/orders', { params }),
 
-  updateOrderStatus: (id: string, status: string) =>
-    api.put<ApiResponse<{ order: Order }>>(`/seller/orders/${id}/status`, { status }),
 
-  // Reviews
-  getReviews: (params?: { page?: number; limit?: number }) =>
-    api.get<ApiResponse<PaginationResponse<Review>>>('/seller/reviews', { params }),
-
-  toggleReview: (id: string) =>
-    api.patch<ApiResponse<{ review: Review }>>(`/seller/reviews/${id}/toggle`),
-
-  // Promotions
-  getPromotions: () =>
-    api.get<ApiResponse<Promotion[]>>('/seller/promotions'),
-
-  createPromotion: (data: Partial<Promotion>) =>
-    api.post<ApiResponse<{ promotion: Promotion }>>('/seller/promotions', data),
-
-  updatePromotion: (id: string, data: Partial<Promotion>) =>
-    api.put<ApiResponse<{ promotion: Promotion }>>(`/seller/promotions/${id}`, data),
-
-  togglePromotion: (id: string) =>
-    api.patch<ApiResponse<{ promotion: Promotion }>>(`/seller/promotions/${id}/toggle`),
-
-  deletePromotion: (id: string) =>
-    api.delete<ApiResponse<{ message: string }>>(`/seller/promotions/${id}`),
-
-  // Revenue
-  getRevenue: (params?: { startDate?: string; endDate?: string }) =>
-    api.get<ApiResponse<{ totalRevenue: number; totalOrders: number }>>('/seller/revenue', { params }),
-
-  // Products (sellerProduct)
-  getProducts: () =>
-    api.get<ApiResponse<Product[]>>('/seller/product'),
-
-  createProduct: (data: Partial<Product>) =>
-    api.post<ApiResponse<{ product: Product }>>('/seller/product', data),
-
-  updateProduct: (id: string, data: Partial<Product>) =>
-    api.put<ApiResponse<{ product: Product }>>(`/seller/product/${id}`, data),
-
-  deleteProduct: (id: string) =>
-    api.delete<ApiResponse<{ message: string }>>(`/seller/product/${id}`),
-
-  // Brand (sellerBrand)
-  getBrand: () =>
-    api.get<ApiResponse<{ brand: any | null }>>('/seller/brand'),
-
-  createBrand: (data: { name: string; country?: string; description?: string; logoUrl?: string }) =>
-    api.post<ApiResponse<{ brand: any }>>('/seller/brand', data),
-
-  updateBrand: (id: string, data: Partial<{ name: string; country?: string; description?: string; logoUrl?: string }>) =>
-    api.put<ApiResponse<{ brand: any }>>(`/seller/brand/${id}`, data),
-
-  deleteBrand: (id: string) =>
-    api.delete<ApiResponse<{ message: string }>>(`/seller/brand/${id}`),
-};
-
-// ------------------------ Default export ------------------------
 export default api;
-
