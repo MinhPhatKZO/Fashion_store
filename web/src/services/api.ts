@@ -56,6 +56,7 @@ export const authAPI = {
     api.put<ApiResponse<{ message: string }>>('/auth/change-password', data),
 };
 
+
 // Products API
 export const productsAPI = {
   getProducts: (params?: {
@@ -282,4 +283,3 @@ export const adminAPI = {
 
 
 export default api;
-

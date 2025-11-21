@@ -2,22 +2,48 @@ import React from "react";
 import CartItem from "../components/CartItem";
 import { useCart } from "../context/CartContext";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 const Cart: React.FC = () => {
   const { cart, updateQuantity, removeItem } = useCart();
+  const navigate = useNavigate();
 
-  // 🔹 Tổng tiền
-  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  // Tong tien
+  const total = cart.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
 
-  // 🔹 Tổng số sản phẩm
+  // Tong so san pham
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Xu ly chuyen huong thanh toan
+  const handleCheckoutNavigation = (method: "cod" | "online") => {
+    if (cart.length === 0) {
+      alert("Giỏ hàng của bạn đang trống!");
+      return;
+    }
+
+    const orderDataToSend = {
+      items: cart,
+      totalPrice: total,
+    };
+
+    if (method === "cod") {
+      navigate("/checkout/cod", { state: { orderData: orderDataToSend } });
+    } else {
+      navigate("/checkout/online", { state: { orderData: orderDataToSend } });
+    }
+  };
 
   return (
     <motion.div className="max-w-7xl mx-auto mt-10 px-4">
-      <h2 className="text-3xl font-bold mb-8 text-gray-800 border-b pb-2">🛒 Giỏ hàng của bạn</h2>
+      <h2 className="text-3xl font-bold mb-8 text-gray-800 border-b pb-2">
+        🛒 Giỏ hàng của bạn
+      </h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Bên trái: danh sách sản phẩm */}
+        {/* Danh sach san pham */}
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6">
           <AnimatePresence>
             {cart.length > 0 ? (
@@ -41,31 +67,57 @@ const Cart: React.FC = () => {
           </AnimatePresence>
         </div>
 
-        {/* Bên phải: tổng tiền + nút */}
+        {/* Tong tien + nut */}
         <div className="bg-gray-50 rounded-2xl shadow-md p-6 flex flex-col justify-between">
           <div className="mb-6">
-            <p className="text-gray-500 font-medium">Tổng số sản phẩm: {totalItems}</p>
+            <p className="text-gray-500 font-medium">
+              Tổng số sản phẩm: {totalItems}
+            </p>
             <p className="text-2xl font-bold text-green-600 mt-1">
-              Tổng tiền: {total.toLocaleString()} ₫
+              Tổng tiền: {total.toLocaleString("vi-VN")} ₫
             </p>
           </div>
 
           <div className="flex flex-col space-y-4">
+            <h3 className="text-xl font-bold text-gray-700 mb-2">
+              Chọn hình thức thanh toán
+            </h3>
+
+            {/* COD */}
             <button
-              onClick={() => alert("Chức năng thanh toán chưa được tích hợp 😅")}
-              className="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-teal-400 text-white font-bold text-lg rounded-xl shadow-lg hover:from-blue-600 hover:to-teal-500 transition-all transform hover:-translate-y-1 hover:shadow-2xl"
+              onClick={() => handleCheckoutNavigation("cod")}
+              disabled={cart.length === 0}
+              className={`w-full py-3 text-lg font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-1 hover:shadow-2xl
+                ${
+                  cart.length === 0
+                    ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                    : "bg-indigo-600 text-white shadow-indigo-400/50 hover:bg-indigo-700"
+                }`}
             >
-              Thanh toán
+              💵 Thanh toán khi nhận hàng (COD)
             </button>
 
+            {/* Online */}
+            <button
+              onClick={() => handleCheckoutNavigation("online")}
+              disabled={cart.length === 0}
+              className={`w-full py-3 text-lg font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-1 hover:shadow-2xl
+                ${
+                  cart.length === 0
+                    ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                    : "bg-green-600 text-white shadow-green-400/50 hover:bg-green-700"
+                }`}
+            >
+              💳 Thanh toán Online
+            </button>
 
+            {/* Quay lai mua sam */}
             <button
               onClick={() => window.history.back()}
               className="w-full px-6 py-4 bg-gray-100 border-2 border-blue-500 text-blue-600 font-semibold text-lg rounded-xl hover:bg-blue-50 hover:text-blue-700 transition-all shadow-sm hover:shadow-md"
             >
               Tiếp tục mua sắm
             </button>
-
           </div>
         </div>
       </div>

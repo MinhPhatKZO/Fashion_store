@@ -19,7 +19,7 @@ import Home from "./pages/Home";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
-import Checkout from "./pages/Checkout";
+// import Checkout from "./pages/Checkout"; // Đã loại bỏ Route Checkout chung
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
@@ -31,10 +31,16 @@ import SellerProducts from "./pages/seller/SellerProducts";
 import AdminPromotion from "./pages/admin/AdminPromotion";
 import AdminSellerStats from "./pages/admin/AdminSellerStats";
 
+// Imports mới cho các trang thanh toán chi tiết (đặt trong thư mục 'payment')
+import CodCheckout from "./payment/CODCheckout";
+import OnlineCheckout from "./payment/OnlineCheckout";
+import WalletProcessor from "./payment/WalletProcessor";
+
 const queryClient = new QueryClient();
 
 function App() {
   useEffect(() => {
+    // Khởi tạo Auth và tải Cart từ LocalStorage khi ứng dụng khởi động
     store.dispatch(initializeAuth());
     store.dispatch(loadCartFromStorage());
   }, []);
@@ -45,7 +51,7 @@ function App() {
         <CartProvider>
           <Router>
             <Routes>
-              {/* ADMIN */}
+              {/* ADMIN ROUTES - Yêu cầu role="admin" */}
               <Route
                 path="/admin/*"
                 element={<ProtectedRoute element={<AdminLayout />} requiredRole="admin" />}
@@ -55,7 +61,7 @@ function App() {
                 <Route path="statistics" element={<AdminSellerStats />} />
               </Route>
 
-              {/* SELLER */}
+              {/* SELLER ROUTES - Yêu cầu role="seller" */}
               <Route
                 path="/seller/*"
                 element={<ProtectedRoute element={<SellerLayout />} requiredRole="seller" />}
@@ -63,13 +69,21 @@ function App() {
                 <Route index element={<SellerProducts />} />
               </Route>
 
-              {/* USER / PUBLIC */}
+              {/* USER / PUBLIC ROUTES - Sử dụng UserLayout làm Layout cha */}
               <Route path="/*" element={<UserLayout />}>
                 <Route index element={<Home />} />
                 <Route path="products" element={<Products />} />
                 <Route path="products/:id" element={<ProductDetail />} />
                 <Route path="cart" element={<Cart />} />
-                <Route path="checkout" element={<Checkout />} />
+                
+                {/* 1. Thanh toán COD: /checkout/cod */}
+                <Route path="checkout/cod" element={<CodCheckout />} />
+                {/* 2. Chọn Cổng Thanh toán Online: /checkout/online */}
+                <Route path="checkout/online" element={<OnlineCheckout />} />
+                {/* 3. Xử lý Cổng Thanh toán cụ thể (Momo/VNPay/ZaloPay): /checkout/online/:walletType */}
+                <Route path="checkout/online/:walletType" element={<WalletProcessor />} />
+                {/* ----------------------------------------------------- */}
+
                 <Route
                   path="login"
                   element={
@@ -96,14 +110,21 @@ function App() {
                     )
                   }
                 />
-                <Route path="profile" element={<Profile />} />
-                <Route path="orders" element={<Orders />} />
-                <Route path="wishlist" element={<Wishlist />} />
+                {/* Các trang yêu cầu User đăng nhập (Profile, Orders, Wishlist) */}
+                <Route path="profile" element={<ProtectedRoute element={<Profile />} />} />
+                <Route path="orders" element={<ProtectedRoute element={<Orders />} />} />
+                <Route path="wishlist" element={<ProtectedRoute element={<Wishlist />} />} />
+
+                {/* Catch-all for 404 inside UserLayout */}
                 <Route path="*" element={<NotFound />} />
               </Route>
 
-              {/* Không có quyền */}
-              <Route path="/not-authorized" element={<div>Không có quyền truy cập.</div>} />
+              {/* Lỗi không có quyền truy cập */}
+              <Route path="/not-authorized" element={
+                <div className="flex items-center justify-center h-screen text-2xl text-red-600 font-bold">
+                  ⚠️ Không có quyền truy cập.
+                </div>
+              } />
             </Routes>
 
             <Toaster position="top-right" />

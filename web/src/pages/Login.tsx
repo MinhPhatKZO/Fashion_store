@@ -40,7 +40,7 @@ export default function Login() {
 
         // ✅ Lưu vào localStorage
         localStorage.setItem("token", token);
-        localStorage.setItem("userID", user.id || user._id);
+        localStorage.setItem("userId", user._id);
         localStorage.setItem("userName", user.name);
         localStorage.setItem("userRole", user.role); // thêm role
 
