@@ -26,10 +26,19 @@ import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
 import Wishlist from "./pages/Wishlist";
 import NotFound from "./pages/NotFound";
+// Admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
-import SellerProducts from "./pages/seller/SellerProducts";
+import AdminBrandManager from "./pages/admin/AdminBrandManager";
 import AdminPromotion from "./pages/admin/AdminPromotion";
 import AdminSellerStats from "./pages/admin/AdminSellerStats";
+// Seller pages
+import SellerDashboard from "./pages/seller/Dashboard";
+import SellerProducts from "./pages/seller/SellerProducts";
+import SellerOrders from "./pages/seller/SellerOrders";
+import SellerCategories from "./pages/seller/SellerCategories";
+import SellerContent from "./pages/seller/SellerContent";
+import SellerPromotions from "./pages/seller/SellerPromotions";
+
 
 const queryClient = new QueryClient();
 
@@ -51,6 +60,7 @@ function App() {
                 element={<ProtectedRoute element={<AdminLayout />} requiredRole="admin" />}
               >
                 <Route index element={<AdminDashboard />} />
+                <Route path="brands" element={<AdminBrandManager />} />
                 <Route path="promotion" element={<AdminPromotion />} />
                 <Route path="statistics" element={<AdminSellerStats />} />
               </Route>
@@ -60,7 +70,12 @@ function App() {
                 path="/seller/*"
                 element={<ProtectedRoute element={<SellerLayout />} requiredRole="seller" />}
               >
-                <Route index element={<SellerProducts />} />
+                <Route index element={<SellerDashboard />} />
+                <Route path="products" element={<SellerProducts />} />
+                <Route path="orders" element={<SellerOrders />} />
+                <Route path="categories" element={<SellerCategories />} />
+                <Route path="content" element={<SellerContent />} />
+                <Route path="promotions" element={<SellerPromotions />} />
               </Route>
 
               {/* USER / PUBLIC */}

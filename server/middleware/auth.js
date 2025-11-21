@@ -10,7 +10,7 @@ const auth = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret');
     req.user = decoded;
-    req.userId = decoded.id; // giữ dòng này
+    req.userId = decoded.id;
     next();
   } catch (err) {
     return res.status(401).json({ message: "Token không hợp lệ" });
@@ -24,4 +24,11 @@ const adminAuth = (req, res, next) => {
   next();
 };
 
-module.exports = { auth, adminAuth };
+const sellerAuth = (req, res, next) => {
+  if (!req.user || req.user.role !== "seller") {
+    return res.status(403).json({ message: "Không đủ quyền truy cập" });
+  }
+  next();
+};
+
+module.exports = { auth, adminAuth, sellerAuth };
