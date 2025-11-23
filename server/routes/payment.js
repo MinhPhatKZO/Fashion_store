@@ -3,152 +3,153 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { body, validationResult } = require('express-validator');
 const Order = require('../models/Order');
 const { auth } = require('../middleware/auth');
+// Lưu ý: Cần thêm logic để tạo PaymentEvent nếu bạn muốn lưu chi tiết giao dịch
 
 const router = express.Router();
 
-// @route   POST /api/payment/create-payment-intent
-// @desc    Create Stripe payment intent
-// @access  Private
+// -------------------------------------------------------------
+// @route   POST /api/payment/create-payment-intent
+// -------------------------------------------------------------
 router.post('/create-payment-intent', auth, [
-  body('orderId').isMongoId().withMessage('Valid order ID is required')
+  body('orderId').isMongoId().withMessage('Valid order ID is required')
 ], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
 
-    const { orderId } = req.body;
+    const { orderId } = req.body;
 
-    const order = await Order.findOne({ _id: orderId, user: req.userId });
-    if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
-    }
+    // ✅ SỬA LỖI 1: Thay 'user' bằng 'userId'
+    const order = await Order.findOne({ _id: orderId, userId: req.userId }); 
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    
+    // ✅ SỬA LỖI 2: Dùng trường 'status' thay vì 'paymentStatus' (và thêm 'unconfirmed')
+    if (order.status !== 'pending' && order.status !== 'unconfirmed') {
+      return res.status(400).json({ message: 'Order payment already processed or cannot be paid' });
+    }
 
-    if (order.paymentStatus !== 'pending') {
-      return res.status(400).json({ message: 'Order payment already processed' });
-    }
+    // Create payment intent
+    const paymentIntent = await stripe.paymentIntents.create({
+      // ✅ SỬA LỖI 3: Thay 'order.total' bằng 'order.totalPrice'
+      amount: Math.round(order.totalPrice * 100), // Convert to cents
+      currency: 'vnd',
+      metadata: {
+        orderId: order._id.toString(),
+        userId: req.userId.toString()
+      }
+    });
+    
+    // ✅ THÊM: Cập nhật trạng thái sang 'unconfirmed' sau khi tạo intent thành công
+    order.status = 'unconfirmed';
+    await order.save();
 
-    // Create payment intent
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(order.total * 100), // Convert to cents
-      currency: 'vnd',
-      metadata: {
-        orderId: order._id.toString(),
-        userId: req.userId.toString()
-      }
-    });
-
-    res.json({
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id
-    });
-  } catch (error) {
-    console.error('Create payment intent error:', error);
-    res.status(500).json({ message: 'Payment processing failed' });
-  }
+    res.json({
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id
+    });
+  } catch (error) {
+    console.error('Create payment intent error:', error);
+    res.status(500).json({ message: 'Payment processing failed' });
+  }
 });
 
-// @route   POST /api/payment/confirm
-// @desc    Confirm payment and update order
-// @access  Private
+// -------------------------------------------------------------
+// @route   POST /api/payment/confirm
+// -------------------------------------------------------------
 router.post('/confirm', auth, [
-  body('paymentIntentId').notEmpty().withMessage('Payment intent ID is required'),
-  body('orderId').isMongoId().withMessage('Valid order ID is required')
+  body('paymentIntentId').notEmpty().withMessage('Payment intent ID is required'),
+  body('orderId').isMongoId().withMessage('Valid order ID is required')
 ], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
 
-    const { paymentIntentId, orderId } = req.body;
+    const { paymentIntentId, orderId } = req.body;
 
-    // Retrieve payment intent from Stripe
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    // Retrieve payment intent from Stripe
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
-    if (paymentIntent.status !== 'succeeded') {
-      return res.status(400).json({ message: 'Payment not completed' });
-    }
+    if (paymentIntent.status !== 'succeeded') {
+      return res.status(400).json({ message: 'Payment not completed' });
+    }
 
-    // Update order
-    const order = await Order.findOneAndUpdate(
-      { _id: orderId, user: req.userId },
-      {
-        paymentStatus: 'paid',
-        'paymentDetails.transactionId': paymentIntent.id,
-        'paymentDetails.paymentDate': new Date(),
-        'paymentDetails.gateway': 'stripe',
-        'paymentDetails.amount': paymentIntent.amount / 100,
-        status: 'confirmed'
-      },
-      { new: true }
-    );
+    // Update order
+    const order = await Order.findOneAndUpdate(
+      // ✅ SỬA LỖI 1: Thay 'user' bằng 'userId'
+      { _id: orderId, userId: req.userId },
+      {
+        // ✅ SỬA LỖI 4: Chỉ cập nhật 'status' chính. Loại bỏ các trường paymentStatus/paymentDetails
+        status: 'processing' // 'confirmed' nên đổi thành 'processing' để phù hợp với enum
+      },
+      { new: true }
+    );
 
-    if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
-    }
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    // TODO: Ghi lại giao dịch vào PaymentEvent (nên làm ở Webhook để đảm bảo tính cuối cùng)
 
-    res.json({
-      message: 'Payment confirmed successfully',
-      order
-    });
-  } catch (error) {
-    console.error('Confirm payment error:', error);
-    res.status(500).json({ message: 'Payment confirmation failed' });
-  }
+    res.json({
+      message: 'Payment confirmed successfully',
+      order
+    });
+  } catch (error) {
+    console.error('Confirm payment error:', error);
+    res.status(500).json({ message: 'Payment confirmation failed' });
+  }
 });
 
-// @route   POST /api/payment/webhook
-// @desc    Stripe webhook handler
-// @access  Public
+// -------------------------------------------------------------
+// @route   POST /api/payment/webhook
+// -------------------------------------------------------------
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  let event;
+  const sig = req.headers['stripe-signature'];
+  let event;
 
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-  } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    // 
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+    
+  // Handle the event
+  switch (event.type) {
+    case 'payment_intent.succeeded':
+      const paymentIntent = event.data.object;
+      console.log('PaymentIntent succeeded:', paymentIntent.id);
+      
+      // ✅ SỬA LỖI 5: Chỉ cập nhật 'status'. Tìm đơn hàng bằng OrderId từ metadata
+      await Order.findByIdAndUpdate(
+        paymentIntent.metadata.orderId,
+        { status: 'processing' } 
+      );
+      // TODO: Tạo PaymentEvent tại đây
+      break;
+      
+    case 'payment_intent.payment_failed':
+      const failedPayment = event.data.object;
+      console.log('PaymentIntent failed:', failedPayment.id);
+      
+      // ✅ SỬA LỖI 5: Chỉ cập nhật 'status'. Tìm đơn hàng bằng OrderId từ metadata
+      await Order.findByIdAndUpdate(
+        failedPayment.metadata.orderId,
+        { status: 'cancelled' } 
+      );
+      break;
+      
+    default:
+      console.log(`Unhandled event type ${event.type}`);
+  }
 
-  // Handle the event
-  switch (event.type) {
-    case 'payment_intent.succeeded':
-      const paymentIntent = event.data.object;
-      console.log('PaymentIntent succeeded:', paymentIntent.id);
-      
-      // Update order status
-      await Order.findOneAndUpdate(
-        { 'paymentDetails.transactionId': paymentIntent.id },
-        {
-          paymentStatus: 'paid',
-          'paymentDetails.paymentDate': new Date(),
-          status: 'confirmed'
-        }
-      );
-      break;
-      
-    case 'payment_intent.payment_failed':
-      const failedPayment = event.data.object;
-      console.log('PaymentIntent failed:', failedPayment.id);
-      
-      // Update order status
-      await Order.findOneAndUpdate(
-        { 'paymentDetails.transactionId': failedPayment.id },
-        {
-          paymentStatus: 'failed'
-        }
-      );
-      break;
-      
-    default:
-      console.log(`Unhandled event type ${event.type}`);
-  }
-
-  res.json({ received: true });
+  res.json({ received: true });
 });
 
 module.exports = router;
-
