@@ -14,7 +14,7 @@ import 'widgets/home_drawer.dart';
 
 // NEW IMPORTS
 import '../category/category_screen.dart';
-import '../favorite/favorites_screen.dart';
+import '../order/order_tracking_screen.dart'; // ĐỔI TỪ favorites_screen
 import '../profile/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -105,8 +105,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // chuyển sang m
-
   void _startAutoPlayIfNeeded() {
     _autoPlayTimer?.cancel();
     if (!_autoPlay || products.isEmpty) return;
@@ -183,6 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _getBodyContent() {
     switch (_selectedIndex) {
       case 0:
+        // HOME TAB
         return HomeBody(
           products: products,
           isLoadingProducts: isLoadingProducts,
@@ -202,20 +201,22 @@ class _HomeScreenState extends State<HomeScreen> {
         );
 
       case 1:
-        // Cung cấp categoryName cho màn hình "Mall" / "All Products"
+        // MALL TAB - Tất cả sản phẩm
         return const CategoryScreen(
-          categoryName: 'All Products', // **Cần cung cấp tham số bắt buộc**
-          categoryId: null,             // ID là null để CategoryScreen tải tất cả
+          categoryName: 'All Products',
+          categoryId: null,
         );
 
       case 2:
-        return const FavoritesScreen();
+        // ORDER TRACKING TAB - ĐỔI TỪ FAVORITES
+        return const OrderTrackingScreen();
 
       case 3:
+        // PROFILE TAB
         return ProfileScreen(username: username, email: email);
 
       default:
-        // Thay vì trả về HomeScreen (gây lặp vô hạn), trả về HomeBody
+        // Default về HomeBody
         return HomeBody(
           products: products,
           isLoadingProducts: isLoadingProducts,
@@ -330,9 +331,9 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Mall',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border),
-            activeIcon: Icon(Icons.favorite),
-            label: 'Favorites',
+            icon: Icon(Icons.local_shipping_outlined), // ĐỔI ICON
+            activeIcon: Icon(Icons.local_shipping),     // ĐỔI ICON
+            label: 'Đơn hàng',                         // ĐỔI LABEL
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),

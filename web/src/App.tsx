@@ -13,6 +13,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AdminLayout from "./components/Layout/AdminLayout";
 import SellerLayout from "./components/Layout/SellerLayout";
 import UserLayout from "./components/Layout/UserLayout";
+import AIChatbox from "./components/AIChatBox/AIChatbox";
 
 // Pages
 import Home from "./pages/Home";
@@ -130,7 +131,7 @@ function App() {
                 }
               />
             </Routes>
-
+            <AIChatbox />   
             <Toaster position="top-right" />
           </Router>
         </CartProvider>

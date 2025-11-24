@@ -9,7 +9,7 @@ class ProductDetailScreen extends StatefulWidget {
   final Product product;
 
   const ProductDetailScreen({Key? key, required this.product})
-    : super(key: key);
+      : super(key: key);
 
   @override
   State<ProductDetailScreen> createState() => _ProductDetailScreenState();
@@ -54,18 +54,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
-  // Hàm xử lý thêm vào giỏ hàng
   void _handleAddToCart() async {
     await CartService.instance.add(widget.product, quantity: _quantity);
     if (mounted) {
-      // Thay thế Navigator.pushNamed bằng SnackBar để thông báo
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('🛒 Đã thêm ${widget.product.name} vào giỏ hàng!'),
           duration: const Duration(seconds: 2),
         ),
       );
-      // Nếu muốn chuyển trang, dùng: Navigator.pushNamed(context, '/cart');
     }
   }
 
@@ -97,7 +94,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // --- Phần Chi tiết sản phẩm (Product Detail) ---
                     LayoutBuilder(
                       builder: (context, constraints) {
                         final isWide = constraints.maxWidth > 800;
@@ -105,15 +101,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ? Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Left: image gallery (5/10)
                                   Expanded(
                                     flex: 5,
-                                    // SỬ DỤNG HÀM MỚI CHO GALLERY
                                     child: _buildImageGallery(images),
                                   ),
                                   const SizedBox(width: 48),
-
-                                  // Right: product details (5/10)
                                   Expanded(
                                     flex: 5,
                                     child: _buildDetailCard(context, product),
@@ -123,11 +115,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             : Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  // Stacked: image gallery
-                                  // SỬ DỤNG HÀM MỚI CHO GALLERY
                                   _buildImageGallery(images),
                                   const SizedBox(height: 18),
-                                  // Stacked: product details
                                   _buildDetailCard(context, product),
                                 ],
                               );
@@ -136,7 +125,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                     const SizedBox(height: 40),
 
-                    // --- Phần Sản phẩm liên quan (Related products) ---
                     if (_isLoadingRelated || _related.isNotEmpty) ...[
                       const Text(
                         'Related products',
@@ -151,37 +139,36 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         child: _isLoadingRelated
                             ? const Center(child: CircularProgressIndicator())
                             : _related.isEmpty
-                            ? Center(
-                                child: Text(
-                                  'No related products',
-                                  style: TextStyle(color: Colors.grey[600]),
-                                ),
-                              )
-                            : ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: _related.length,
-                                separatorBuilder: (_, __) =>
-                                    const SizedBox(width: 16),
-                                itemBuilder: (context, index) {
-                                  final p = _related[index];
-                                  return SizedBox(
-                                    width: 200,
-                                    child: ProductCard(
-                                      product: p,
-                                      onTap: () {
-                                        // Dùng pushReplacement để tránh tạo quá nhiều tầng detail screen
-                                        Navigator.pushReplacement(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) =>
-                                                ProductDetailScreen(product: p),
-                                          ),
-                                        );
-                                      },
+                                ? Center(
+                                    child: Text(
+                                      'No related products',
+                                      style: TextStyle(color: Colors.grey[600]),
                                     ),
-                                  );
-                                },
-                              ),
+                                  )
+                                : ListView.separated(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: _related.length,
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(width: 16),
+                                    itemBuilder: (context, index) {
+                                      final p = _related[index];
+                                      return SizedBox(
+                                        width: 200,
+                                        child: ProductCard(
+                                          product: p,
+                                          onTap: () {
+                                            Navigator.pushReplacement(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    ProductDetailScreen(product: p),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      );
+                                    },
+                                  ),
                       ),
                     ],
                   ],
@@ -194,15 +181,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  // --- WIDGET MỚI: Image Gallery (Tách ra để căn chỉnh) ---
   Widget _buildImageGallery(List<String> images) {
     return Column(
       children: [
-        // Ảnh chính (Page View) - Đảm bảo tỷ lệ 3:4
         AspectRatio(
-          aspectRatio: 3 / 4,
+          aspectRatio: 16 / 9,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
             child: PageView.builder(
               controller: _pageController,
               itemCount: images.length,
@@ -215,7 +200,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        // Danh sách ảnh nhỏ (Thumbnails)
         SizedBox(
           height: 72,
           child: ListView.separated(
@@ -234,7 +218,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   );
                 },
                 child: Container(
-                  width: 72, // Đảm bảo kích thước cố định cho thumbnail
+                  width: 96,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
@@ -254,9 +238,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       ],
     );
   }
-  // --------------------------------------------------------
 
-  // --- WIDGET CŨ: Product Details (Đã giữ nguyên) ---
   Widget _buildDetailCard(BuildContext context, Product product) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,7 +266,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
         Row(
           children: [
-            // Quantity selector
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(6),
@@ -318,7 +299,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     borderRadius: BorderRadius.circular(6),
                   ),
                 ),
-                // Đã sử dụng hàm _handleAddToCart
                 onPressed: _handleAddToCart,
                 child: const Text(
                   'Add to cart',
@@ -331,17 +311,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.black,
                 side: const BorderSide(color: Colors.black),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 12,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(6),
                 ),
               ),
-              onPressed: () {
-                // Thêm chức năng Buy Online sau
-              },
+              onPressed: () {},
               child: const Text('Buy Online'),
             ),
           ],
@@ -356,7 +331,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  // --- WIDGET CŨ: Image Builder (Đã giữ nguyên) ---
   Widget _buildImage(String src, {BoxFit fit = BoxFit.cover}) {
     if (src.startsWith('http')) {
       return Image.network(
@@ -374,11 +348,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  // --- WIDGET CŨ: Placeholder (Đã giữ nguyên) ---
   Widget _imagePlaceholder() => Container(
-    color: Colors.grey.shade100,
-    child: const Center(
-      child: Icon(Icons.broken_image, size: 56, color: Colors.grey),
-    ),
-  );
+        color: Colors.grey.shade100,
+        child: const Center(
+          child: Icon(Icons.broken_image, size: 56, color: Colors.grey),
+        ),
+      );
 }
