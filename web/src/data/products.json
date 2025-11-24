@@ -1,0 +1,400 @@
+[{
+  "_id": {
+    "$oid": "652f00000000000000000301"
+  },
+  "name": "Áo thun nam Nike",
+  "categoryId": {
+    "$oid": "652f00000000000000000101"
+  },
+  "brandId": {
+    "$oid": "652f00000000000000000201"
+  },
+  "price": 350000,
+  "stock": 50,
+  "images": [
+    "/assets/products/aothunnike.jpg"
+  ],
+  "description": "Áo thun nam Nike cotton",
+  "isActive": true,
+  "isFeatured": true
+},
+{
+  "_id": {
+    "$oid": "652f00000000000000000302"
+  },
+  "name": "Áo sơ mi nam H&M",
+  "categoryId": {
+    "$oid": "652f00000000000000000101"
+  },
+  "brandId": {
+    "$oid": "652f00000000000000000204"
+  },
+  "price": 450000,
+  "stock": 40,
+  "images": [
+    "/assets/products/aosominamH&M.jpg"
+  ],
+  "description": "Áo sơ mi nam H&M",
+  "isActive": true,
+  "isFeatured": true
+},
+{
+  "_id": {
+    "$oid": "652f00000000000000000303"
+  },
+  "name": "Quần jeans nữ Zara",
+  "categoryId": {
+    "$oid": "652f00000000000000000102"
+  },
+  "brandId": {
+    "$oid": "652f00000000000000000203"
+  },
+  "price": 600000,
+  "stock": 35,
+  "images": [
+    "/assets/products/jeannuZara.jpg"
+  ],
+  "description": "Quần jeans nữ Zara",
+  "isActive": true,
+  "isFeatured": true
+},
+{
+  "_id": {
+    "$oid": "652f00000000000000000304"
+  },
+  "name": "Váy nữ Gucci",
+  "categoryId": {
+    "$oid": "652f00000000000000000102"
+  },
+  "brandId": {
+    "$oid": "652f00000000000000000205"
+  },
+  "price": 2500000,
+  "stock": 10,
+  "images": [
+    "/assets/products/vaynugucci.jpg"
+  ],
+  "description": "Váy nữ Gucci cao cấp",
+  "isActive": true,
+  "isFeatured": true
+},
+{
+  "_id": {
+    "$oid": "652f00000000000000000305"
+  },
+  "name": "Giày Adidas Ultraboost",
+  "categoryId": {
+    "$oid": "652f00000000000000000105"
+  },
+  "brandId": {
+    "$oid": "652f00000000000000000202"
+  },
+  "price": 2500000,
+  "stock": 20,
+  "images": [
+    "/assets/products/giayadidas.jpg"
+  ],
+  "description": "Giày chạy bộ Adidas Ultraboost",
+  "isActive": true,
+  "isFeatured": true
+},
+{
+  "_id": {
+    "$oid": "652f00000000000000000306"
+  },
+  "name": "Giày Nike Air Force 1",
+  "categoryId": {
+    "$oid": "652f00000000000000000105"
+  },
+  "brandId": {
+    "$oid": "652f00000000000000000201"
+  },
+  "price": 2200000,
+  "stock": 25,
+  "images": [
+    "/assets/products/giaynike.jpg"
+  ],
+  "description": "Giày Nike AF1 classic",
+  "isActive": true,
+  "isFeatured": true
+},
+{
+  "_id": {
+    "$oid": "652f00000000000000000307"
+  },
+  "name": "Balo H&M",
+  "categoryId": {
+    "$oid": "652f00000000000000000104"
+  },
+  "brandId": {
+    "$oid": "652f00000000000000000204"
+  },
+  "price": 700000,
+  "stock": 30,
+  "images": [
+    "/assets/products/baloH&M.jpg"
+  ],
+  "description": "Balo H&M tiện dụng",
+  "isActive": true,
+  "isFeatured": true
+},
+{
+  "_id": {
+    "$oid": "652f00000000000000000308"
+  },
+  "name": "Túi xách nữ Zara",
+  "categoryId": {
+    "$oid": "652f00000000000000000104"
+  },
+  "brandId": {
+    "$oid": "652f00000000000000000203"
+  },
+  "price": 950000,
+  "stock": 15,
+  "images": [
+    "/assets/products/zara-bag.jpg"
+  ],
+  "description": "Túi xách nữ Zara",
+  "isActive": true,
+  "isFeatured": true
+},
+{
+  "_id": {
+    "$oid": "652f00000000000000000309"
+  },
+  "name": "Mũ Nike Cap",
+  "categoryId": {
+    "$oid": "652f00000000000000000104"
+  },
+  "brandId": {
+    "$oid": "652f00000000000000000201"
+  },
+  "price": 300000,
+  "stock": 50,
+  "images": [
+    "/assets/products/nike-cap.jpg"
+  ],
+  "description": "Mũ lưỡi trai Nike",
+  "isActive": true,
+  "isFeatured": true
+},
+{
+  "_id": {
+    "$oid": "652f00000000000000000310"
+  },
+  "name": "Áo hoodie Adidas",
+  "categoryId": {
+    "$oid": "652f00000000000000000101"
+  },
+  "brandId": {
+    "$oid": "652f00000000000000000202"
+  },
+  "price": 800000,
+  "stock": 20,
+  "images": [
+    "/assets/products/adidas-hoodie.jpg"
+  ],
+  "description": "Áo hoodie Adidas",
+  "isActive": true,
+  "isFeatured": true
+},
+{
+  "_id": {
+    "$oid": "652f00000000000000000311"
+  },
+  "name": "Áo khoác nam Gucci",
+  "categoryId": {
+    "$oid": "652f00000000000000000101"
+  },
+  "brandId": {
+    "$oid": "652f00000000000000000205"
+  },
+  "price": 3500000,
+  "stock": 5,
+  "images": [
+    "/assets/products/gucci-jacket.jpg"
+  ],
+  "description": "Áo khoác Gucci nam",
+  "isActive": true,
+  "isFeatured": true
+},
+{
+  "_id": {
+    "$oid": "652f00000000000000000312"
+  },
+  "name": "Giày Zara Sneakers",
+  "categoryId": {
+    "$oid": "652f00000000000000000105"
+  },
+  "brandId": {
+    "$oid": "652f00000000000000000203"
+  },
+  "price": 1200000,
+  "stock": 18,
+  "images": [
+    "/assets/products/zara-sneakers.jpg"
+  ],
+  "description": "Sneakers Zara",
+  "isActive": true,
+  "isFeatured": true
+},
+{
+  "_id": {
+    "$oid": "652f00000000000000000313"
+  },
+  "name": "Áo thun nữ H&M",
+  "categoryId": {
+    "$oid": "652f00000000000000000102"
+  },
+  "brandId": {
+    "$oid": "652f00000000000000000204"
+  },
+  "price": 400000,
+  "stock": 28,
+  "images": [
+    "/assets/products/hm-shirt-women.jpg"
+  ],
+  "description": "Áo thun nữ H&M",
+  "isActive": true,
+  "isFeatured": true
+},
+{
+  "_id": {
+    "$oid": "652f00000000000000000314"
+  },
+  "name": "Váy H&M",
+  "categoryId": {
+    "$oid": "652f00000000000000000102"
+  },
+  "brandId": {
+    "$oid": "652f00000000000000000204"
+  },
+  "price": 700000,
+  "stock": 22,
+  "images": [
+    "/assets/products/hm-dress.jpg"
+  ],
+  "description": "Váy nữ H&M",
+  "isActive": true,
+  "isFeatured": true
+},
+{
+  "_id": {
+    "$oid": "652f00000000000000000315"
+  },
+  "name": "Áo polo nam Adidas",
+  "categoryId": {
+    "$oid": "652f00000000000000000101"
+  },
+  "brandId": {
+    "$oid": "652f00000000000000000202"
+  },
+  "price": 550000,
+  "stock": 40,
+  "images": [
+    "/assets/products/adidas-polo.jpg"
+  ],
+  "description": "Áo polo Adidas nam",
+  "isActive": true,
+  "isFeatured": true
+},
+{
+  "_id": {
+    "$oid": "652f00000000000000000316"
+  },
+  "name": "Áo sơ mi nữ Gucci",
+  "categoryId": {
+    "$oid": "652f00000000000000000102"
+  },
+  "brandId": {
+    "$oid": "652f00000000000000000205"
+  },
+  "price": 2800000,
+  "stock": 8,
+  "images": [
+    "/assets/products/gucci-shirt-women.jpg"
+  ],
+  "description": "Áo sơ mi nữ Gucci",
+  "isActive": true,
+  "isFeatured": true
+},
+{
+  "_id": {
+    "$oid": "652f00000000000000000317"
+  },
+  "name": "Giày H&M Boots",
+  "categoryId": {
+    "$oid": "652f00000000000000000105"
+  },
+  "brandId": {
+    "$oid": "652f00000000000000000204"
+  },
+  "price": 1300000,
+  "stock": 12,
+  "images": [
+    "/assets/products/hm-boots.jpg"
+  ],
+  "description": "Boots H&M",
+  "isActive": true,
+  "isFeatured": true
+},
+{
+  "_id": {
+    "$oid": "652f00000000000000000318"
+  },
+  "name": "Áo khoác nữ Zara",
+  "categoryId": {
+    "$oid": "652f00000000000000000102"
+  },
+  "brandId": {
+    "$oid": "652f00000000000000000203"
+  },
+  "price": 1500000,
+  "stock": 16,
+  "images": [
+    "/assets/products/zara-jacket-women.jpg"
+  ],
+  "description": "Áo khoác nữ Zara",
+  "isActive": true,
+  "isFeatured": true
+},
+{
+  "_id": {
+    "$oid": "652f00000000000000000319"
+  },
+  "name": "Túi Gucci",
+  "categoryId": {
+    "$oid": "652f00000000000000000104"
+  },
+  "brandId": {
+    "$oid": "652f00000000000000000205"
+  },
+  "price": 5000000,
+  "stock": 6,
+  "images": [
+    "/assets/products/gucci-bag.jpg"
+  ],
+  "description": "Túi Gucci cao cấp",
+  "isActive": true,
+  "isFeatured": true
+},
+{
+  "_id": {
+    "$oid": "652f00000000000000000320"
+  },
+  "name": "Áo phông trẻ em Nike",
+  "categoryId": {
+    "$oid": "652f00000000000000000103"
+  },
+  "brandId": {
+    "$oid": "652f00000000000000000201"
+  },
+  "price": 250000,
+  "stock": 30,
+  "images": [
+    "/assets/products/nike-kid-shirt.jpg"
+  ],
+  "description": "Áo trẻ em Nike",
+  "isActive": true,
+  "isFeatured": true
+}]

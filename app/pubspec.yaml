@@ -1,0 +1,47 @@
+name: fashion_store_app
+description: Fashion Store Mobile App - E-commerce application for fashion products
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.8.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI
+  cupertino_icons: ^1.0.8
+  material_design_icons_flutter: ^7.0.7296
+
+  # API
+  http: ^1.2.2
+
+  # Local storage (lưu token)
+  shared_preferences: ^2.3.2
+
+  # Chọn ảnh từ máy
+  image_picker: ^1.0.7
+
+  # Cache ảnh mạng
+  cached_network_image: ^3.4.1
+
+  # Animation (loading, splash)
+  lottie: ^3.1.2
+
+  # Format ngày tháng – tiền tệ
+  intl: ^0.18.1
+
+  # Mở liên kết (MoMo, ZaloPay,...)
+  url_launcher: ^6.1.12
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/
