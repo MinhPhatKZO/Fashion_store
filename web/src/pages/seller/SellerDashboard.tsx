@@ -34,73 +34,49 @@ export default function SellerDashboard() {
   const [userName, setUserName] = useState<string | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [revenueToday, setRevenueToday] = useState<number>(0);
+  const [revenueWeek, setRevenueWeek] = useState<number>(0);
+  const [revenueMonth, setRevenueMonth] = useState<number>(0);
+  const [weekRevenue, setWeekRevenue] = useState<number[]>([]);
+  const [monthRevenue, setMonthRevenue] = useState<number[]>([]);
 
-  useEffect(() => {
-    setUserName(localStorage.getItem("userName"));
+useEffect(() => {
+  setUserName(localStorage.getItem("userName"));
 
-    const fetchData = async () => {
-      try {
-        const ordersRes = await axios.get("http://localhost:5000/api/seller/orders");
-        setOrders(ordersRes.data);
+  const token = localStorage.getItem("token");
+  if (!token) return;
 
-        const productsRes = await axios.get("http://localhost:5000/api/seller/products");
-        setProducts(productsRes.data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
+  const fetchData = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/seller/dashboard", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = res.data;
 
-    fetchData();
-  }, []);
+      setProducts(data.products);
+      setOrders(data.orders);
+      setRevenueToday(data.revenueToday);
+      setRevenueWeek(data.revenueWeek);
+      setRevenueMonth(data.revenueMonth);
+      setWeekRevenue(data.weekRevenue);
+      setMonthRevenue(data.monthRevenue);
+    } catch (err) {
+      console.error("Error fetching seller dashboard data:", err);
+    }
+  };
+
+  fetchData();
+}, []);
+
+
 
   const handleLogout = () => {
     localStorage.clear();
     window.location.reload();
   };
 
-  const today = new Date();
-
-  // Tính doanh thu ngày, tuần, tháng
-  const isSameDay = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toDateString() === today.toDateString();
-  };
-
-  const isSameWeek = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const firstDayOfWeek = new Date(today);
-    firstDayOfWeek.setDate(today.getDate() - today.getDay()); // Chủ nhật là 0
-    const lastDayOfWeek = new Date(firstDayOfWeek);
-    lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6);
-    return date >= firstDayOfWeek && date <= lastDayOfWeek;
-  };
-
-  const isSameMonth = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth();
-  };
-
-  const revenueToday = orders.filter((o) => isSameDay(o.createdAt)).reduce((sum, o) => sum + o.totalPrice, 0);
-  const revenueWeek = orders.filter((o) => isSameWeek(o.createdAt)).reduce((sum, o) => sum + o.totalPrice, 0);
-  const revenueMonth = orders.filter((o) => isSameMonth(o.createdAt)).reduce((sum, o) => sum + o.totalPrice, 0);
-
-  // ===== Biểu đồ doanh thu theo tuần =====
   const weekDays = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
-  const weekRevenue = weekDays.map((_, i) => {
-    const day = new Date(today);
-    day.setDate(today.getDate() - today.getDay() + i);
-    return orders
-      .filter((o) => new Date(o.createdAt).toDateString() === day.toDateString())
-      .reduce((sum, o) => sum + o.totalPrice, 0);
-  });
-
-  // ===== Biểu đồ doanh thu theo tháng =====
   const monthLabels = Array.from({ length: 12 }, (_, i) => `Tháng ${i + 1}`);
-  const monthRevenue = monthLabels.map((_, i) => {
-    return orders
-      .filter((o) => new Date(o.createdAt).getMonth() === i)
-      .reduce((sum, o) => sum + o.totalPrice, 0);
-  });
 
   const weekChartData = {
     labels: weekDays,
@@ -197,7 +173,7 @@ export default function SellerDashboard() {
               </tr>
             </thead>
             <tbody>
-              {orders.slice(0, 10).map((o) => (
+              {orders.map((o) => (
                 <tr key={o._id} className="hover:bg-gray-50">
                   <td className="p-2">{o.orderNumber}</td>
                   <td className="p-2">{o.totalPrice.toLocaleString()} VND</td>

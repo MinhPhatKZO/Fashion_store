@@ -1,67 +1,79 @@
 const express = require("express");
 const router = express.Router();
+const { auth, sellerAuth } = require("../../middleware/auth");
+
 const Order = require("../../models/Order");
 const Product = require("../../models/Product");
-const mongoose = require("mongoose");
 
-// Middleware: xác định seller
-const sellerAuth = (req, res, next) => {
-  // Ví dụ: userId lưu trong token hoặc header
-  req.userId = req.headers["x-user-id"];
-  next();
-};
-
-router.use(sellerAuth);
-
-// GET /api/seller/dashboard
-router.get("/dashboard", async (req, res) => {
+// ===============================
+//      API SELLER DASHBOARD
+// ===============================
+router.get("/dashboard", auth, sellerAuth, async (req, res) => {
   try {
-    const sellerId = req.userId;
+    const sellerId = req.userId; // sellerId từ middleware auth
 
-    // Lấy tất cả đơn hàng của seller
-    const products = await Product.find({ seller_id: sellerId }).select("_id");
-    const productIds = products.map((p) => p._id);
+    // ===============================
+    // 1. Lấy danh sách sản phẩm theo seller
+    // ===============================
+    const products = await Product.find({ userId: sellerId }).select(
+      "name price stock"
+    );
 
-    const orders = await Order.find({ "items.product": { $in: productIds } }).sort({ createdAt: -1 });
+    // ===============================
+    // 2. Lấy đơn hàng của seller
+    // ===============================
+    const orders = await Order.find({ seller: sellerId }).sort({
+      createdAt: -1,
+    });
 
-    const today = new Date();
+    // ===============================
+    // 3. Tính doanh thu theo ngày – tuần – tháng
+    // ===============================
+    const now = new Date();
+    const startOfDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate()
+    );
 
-    // Tính doanh thu
-    const isSameDay = (dateStr) => new Date(dateStr).toDateString() === today.toDateString();
-    const isSameWeek = (dateStr) => {
-      const date = new Date(dateStr);
-      const firstDayOfWeek = new Date(today);
-      firstDayOfWeek.setDate(today.getDate() - today.getDay());
-      const lastDayOfWeek = new Date(firstDayOfWeek);
-      lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6);
-      return date >= firstDayOfWeek && date <= lastDayOfWeek;
-    };
-    const isSameMonth = (dateStr) => {
-      const date = new Date(dateStr);
-      return date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth();
-    };
+    const startOfWeek = new Date(startOfDay);
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay()); // CN = 0
 
-    const revenueToday = orders.filter((o) => isSameDay(o.createdAt)).reduce((sum, o) => sum + o.totalPrice, 0);
-    const revenueWeek = orders.filter((o) => isSameWeek(o.createdAt)).reduce((sum, o) => sum + o.totalPrice, 0);
-    const revenueMonth = orders.filter((o) => isSameMonth(o.createdAt)).reduce((sum, o) => sum + o.totalPrice, 0);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    // Thống kê trạng thái đơn hàng
-    const statusStats = orders.reduce((acc, o) => {
-      acc[o.status] = (acc[o.status] || 0) + 1;
-      return acc;
-    }, {});
+    let revenueToday = 0;
+    let revenueWeek = 0;
+    let revenueMonth = 0;
 
-    res.json({
+    let weekRevenue = Array(7).fill(0); // CN->T7
+    let monthRevenue = Array(12).fill(0); // Tháng 1->12
+
+    orders.forEach((order) => {
+      const created = new Date(order.createdAt);
+      const price = order.totalPrice;
+
+      if (created >= startOfDay) revenueToday += price;
+      if (created >= startOfWeek) {
+        revenueWeek += price;
+        weekRevenue[created.getDay()] += price;
+      }
+      if (created >= startOfMonth) revenueMonth += price;
+
+      monthRevenue[created.getMonth()] += price;
+    });
+
+    return res.status(200).json({
+      products,
+      orders,
       revenueToday,
       revenueWeek,
       revenueMonth,
-      totalOrders: orders.length,
-      recentOrders: orders.slice(0, 10),
-      statusStats,
+      weekRevenue,
+      monthRevenue,
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+  } catch (error) {
+    console.error("Dashboard Error:", error);
+    return res.status(500).json({ message: "Server Error", error });
   }
 });
 

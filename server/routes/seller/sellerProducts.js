@@ -34,20 +34,23 @@ router.get("/", auth, sellerAuth, async (req, res) => {
 router.post("/", auth, sellerAuth, upload.single("image"), async (req, res) => {
   try {
     const { name, price, description } = req.body;
-    if (!name || !price) return res.status(400).json({ message: "Thiếu thông tin sản phẩm" });
 
-    const productData = { name, price: Number(price), description, userId: req.userId };
+    const productData = {
+      name,
+      price: Number(price),
+      description,
+      seller: req.userId,
+    };
 
     if (req.file) {
-      productData.images = [{ url: `/assets/products/${req.file.filename}`, alt: "" }];
+      productData.images = [
+        { url: `/assets/products/${req.file.filename}`, alt: "" }
+      ];
     }
 
-    const product = new Product(productData);
-    await product.save();
-
+    const product = await Product.create(productData);
     res.json({ message: "Tạo sản phẩm thành công", product });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Lỗi tạo sản phẩm", error });
   }
 });
@@ -111,7 +114,7 @@ router.post("/:id/images", auth, sellerAuth, upload.array("images", 10), async (
     }));
 
     const product = await Product.findOneAndUpdate(
-      { _id: req.params.id, user_id: req.userId },
+      { _id: req.params.id, userId: req.userId },
       { $push: { images: { $each: files } } },
       { new: true }
     );

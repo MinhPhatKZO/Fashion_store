@@ -230,3 +230,30 @@ export interface Promotion {
   endDate: string;
   active: boolean;
 }
+
+// types/index.ts
+
+export interface ReduxCartItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  price: number;
+  variantId?: string;
+  productImage?: string;
+}
+
+export interface LocalCart {
+  items: CartItem[];
+}
+
+export interface ShippingInfo {
+  fullName: string;
+  phone: string;
+  address: string;
+}
+
+export interface CheckoutProps {
+  localCart: LocalCart;    // Giỏ hàng lấy từ localStorage
+  token: string;           // Token người dùng đăng nhập
+  shippingInfo?: ShippingInfo; // Thông tin giao hàng (có thể để undefined nếu chưa nhập)
+}

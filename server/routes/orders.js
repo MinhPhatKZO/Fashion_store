@@ -10,20 +10,50 @@ const { auth } = require("../middleware/auth");
 
 const router = express.Router();
 
-/* ============================================
+
+
+// POST create-vnpay-order
+router.post("/create-vnpay-order", auth, async (req, res) => {
+  try {
+    const { items, seller, totalPrice, shippingAddress } = req.body;
+
+    const newOrder = await Order.create({
+      user: req.user.id,
+      seller,
+      items,
+      totalPrice,
+      shippingAddress,
+      paymentMethod: "VNPAY",
+      status: "pending",
+    });
+
+    res.json({
+      success: true,
+      orderId: newOrder._id,
+      orderNumber: newOrder.orderNumber
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Tạo đơn hàng thất bại" });
+  }
+});
+
+/* =======================================================
    GET: Lấy danh sách đơn hàng của user
-   ============================================ */
+   ======================================================= */
 router.get("/", auth, async (req, res) => {
   try {
     const { page = 1, limit = 10, status } = req.query;
 
     const filter = { user: req.userId };
+
     if (status) filter.status = status;
 
-    const skip = (page - 1) * limit;
+    const skip = (page - 1) * Number(limit);
 
     const orders = await Order.find(filter)
       .populate("items.product", "name images price")
+      .populate("seller", "name email")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit));
@@ -46,9 +76,10 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
-/* ============================================
-   GET: Lấy chi tiết đơn hàng theo ID
-   ============================================ */
+
+/* =======================================================
+   GET: Lấy chi tiết đơn hàng
+   ======================================================= */
 router.get("/:id", auth, async (req, res) => {
   try {
     const order = await Order.findOne({
@@ -56,23 +87,25 @@ router.get("/:id", auth, async (req, res) => {
       user: req.userId,
     })
       .populate("items.product", "name images price")
+      .populate("seller", "name email")
       .populate("user", "name email phone");
 
     if (!order) return res.status(404).json({ message: "Order not found" });
 
     res.json({ order });
   } catch (error) {
-    console.error("❌ Get order error:", error);
+    console.error("❌ Get order detail error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-/* ============================================
-   POST: Tạo đơn COD (dùng Variant collection)
-   ============================================ */
+
+/* =======================================================
+   POST: Tạo đơn COD (có Variant)
+   ======================================================= */
 router.post("/cod", auth, async (req, res) => {
   try {
-    const { items, shippingAddress: shippingInfoObject, orderNumber } = req.body;
+    const { items, shippingAddress: shippingInfoObject } = req.body;
 
     if (!items?.length)
       return res.status(400).json({ message: "Giỏ hàng rỗng." });
@@ -80,19 +113,25 @@ router.post("/cod", auth, async (req, res) => {
     if (!shippingInfoObject)
       return res.status(400).json({ message: "Thiếu thông tin giao hàng." });
 
-    const shippingAddressString = `
-      Người nhận: ${shippingInfoObject.fullName},
-      ĐT: ${shippingInfoObject.phone},
-      Địa chỉ: ${shippingInfoObject.address}
-    `;
-
     let calculatedTotalPrice = 0;
     const shippingFee = 30000;
     const orderItems = [];
 
+    let seller = null;
+
     for (const item of items) {
       const product = await Product.findById(item.productId);
-      if (!product) return res.status(404).json({ message: "Product not found" });
+
+      if (!product)
+        return res.status(404).json({ message: "Product not found" });
+
+      // 🔥 Lấy seller từ product
+      if (!seller) seller = product.seller;
+      else if (seller.toString() !== product.seller.toString()) {
+        return res.status(400).json({
+          message: "Tất cả sản phẩm phải thuộc cùng một người bán"
+        });
+      }
 
       let finalPrice = product.price;
       let variant = null;
@@ -101,124 +140,111 @@ router.post("/cod", auth, async (req, res) => {
         variant = await Variant.findById(item.variantId);
         if (!variant)
           return res.status(404).json({ message: "Variant not found" });
-
         finalPrice = variant.price;
       }
 
-      const itemTotal = finalPrice * item.quantity;
-      calculatedTotalPrice += itemTotal;
+      calculatedTotalPrice += finalPrice * item.quantity;
 
       orderItems.push({
         product: product._id,
         quantity: item.quantity,
         price: finalPrice,
-        variantId: variant?._id,
-        productName: product.name,
       });
     }
 
     const finalTotal = calculatedTotalPrice + shippingFee;
 
+    const shippingAddressString = `
+      Người nhận: ${shippingInfoObject.fullName},
+      ĐT: ${shippingInfoObject.phone},
+      Địa chỉ: ${shippingInfoObject.address}
+    `;
+
     const order = new Order({
       user: req.userId,
-      orderNumber: orderNumber || `ORD-${Date.now()}`,
+      seller,
+      orderNumber: `ORD-${Date.now()}`,
       items: orderItems,
       shippingAddress: shippingAddressString,
       totalPrice: finalTotal,
       paymentMethod: "COD",
-      status: "unconfirmed",
+      status: "pending",
     });
 
     await order.save();
 
-    res.status(201).json({ message: "Order created successfully (COD)", order });
-
+    res.status(201).json({
+      message: "Order created successfully (COD)",
+      order,
+    });
   } catch (error) {
     console.error("❌ Create COD error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-/* ============================================
-   POST: Tạo đơn thường (có MoMo)
-   ============================================ */
-router.post(
-  "/",
-  auth,
-  [
-    body("items").isArray({ min: 1 }),
-    body("shippingAddress").isObject(),
-    body("paymentMethod").isIn([
-      "cod",
-      "credit_card",
-      "bank_transfer",
-      "wallet",
-      "momo",
-    ]),
-  ],
-  async (req, res) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty())
-        return res.status(400).json({ errors: errors.array() });
 
-      const { items, shippingAddress, paymentMethod, notes } = req.body;
 
-      let subtotal = 0;
-      const orderItems = [];
+/* =======================================================
+   POST: Tạo đơn thanh toán (MoMo / Bank / Wallet)
+   ======================================================= */
+router.post("/", auth, async (req, res) => {
+  try {
+    const { items, shippingAddress, paymentMethod, notes } = req.body;
 
-      for (const item of items) {
-        const product = await Product.findById(item.product);
+    let totalPrice = 0;
+    const orderItems = [];
+    let seller = null;
 
-        if (!product)
-          return res
-            .status(400)
-            .json({ message: `Product ${item.product} not found` });
+    for (const item of items) {
+      const product = await Product.findById(item.product);
 
-        const itemTotal = product.price * item.quantity;
-        subtotal += itemTotal;
+      if (!product)
+        return res.status(400).json({
+          message: `Product ${item.product} not found`,
+        });
 
-        orderItems.push({
-          product: product._id,
-          quantity: item.quantity,
-          price: product.price,
-          total: itemTotal,
+      if (!seller) seller = product.seller;
+      else if (seller.toString() !== product.seller.toString()) {
+        return res.status(400).json({
+          message: "Tất cả sản phẩm phải thuộc cùng một người bán"
         });
       }
 
-      const shippingCost = subtotal > 500000 ? 0 : 30000;
-      const tax = Math.round(subtotal * 0.1);
-      const total = subtotal + shippingCost + tax;
+      const itemTotal = product.price * item.quantity;
+      totalPrice += itemTotal;
 
-      const order = new Order({
-        user: req.userId,
-        items: orderItems,
-        shippingAddress,
-        paymentMethod,
-        subtotal,
-        shippingCost,
-        tax,
-        total,
-        notes,
+      orderItems.push({
+        product: product._id,
+        quantity: item.quantity,
+        price: product.price,
       });
-
-      await order.save();
-
-      if (paymentMethod === "momo") {
-        /// Momo logic...
-      }
-
-      res.status(201).json({ success: true, data: order });
-    } catch (error) {
-      console.error("❌ Create order error:", error);
-      res.status(500).json({ message: error.message });
     }
-  }
-);
 
-/* ============================================
+    const order = new Order({
+      user: req.userId,
+      seller,
+      items: orderItems,
+      shippingAddress,
+      paymentMethod,
+      totalPrice,
+      notes,
+      orderNumber: `ORD-${Date.now()}`,
+    });
+
+    await order.save();
+
+    res.status(201).json({ success: true, data: order });
+  } catch (error) {
+    console.error("❌ Create order error:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
+/* =======================================================
    PUT: Cancel order
-   ============================================ */
+   ======================================================= */
 router.put("/:id/cancel", auth, async (req, res) => {
   try {
     const { reason } = req.body;
@@ -230,10 +256,10 @@ router.put("/:id/cancel", auth, async (req, res) => {
 
     if (!order) return res.status(404).json({ message: "Order not found" });
 
-    if (!["pending", "confirmed", "unconfirmed"].includes(order.status)) {
-      return res
-        .status(400)
-        .json({ message: "Order cannot be cancelled at this stage" });
+    if (!["pending", "unconfirmed"].includes(order.status)) {
+      return res.status(400).json({
+        message: "Order cannot be cancelled at this stage",
+      });
     }
 
     order.status = "cancelled";
@@ -242,11 +268,15 @@ router.put("/:id/cancel", auth, async (req, res) => {
 
     await order.save();
 
-    res.json({ message: "Order cancelled successfully", order });
+    res.json({
+      message: "Order cancelled successfully",
+      order,
+    });
   } catch (error) {
     console.error("❌ Cancel order error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 module.exports = router;

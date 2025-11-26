@@ -27,6 +27,10 @@ const AdminHeader: React.FC = () => {
   }, []);
 
   const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userRole');
     dispatch(logout());
     localStorage.removeItem('localCart');
     navigate(0);

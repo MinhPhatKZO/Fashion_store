@@ -80,7 +80,7 @@ app.use('/api/vnpay', require('./routes/vnpay'));
 //Seller
 app.use("/api/seller/products", require("./routes/seller/sellerProducts"));
 app.use("/api/seller/orders", require("./routes/seller/sellerOrder"));
-app.use("/api/seller/dashboard", require("./routes/seller/seller"));
+app.use("/api/seller/", require("./routes/seller/seller"));
 
 // Health check
 app.get('/health', (req, res) => {

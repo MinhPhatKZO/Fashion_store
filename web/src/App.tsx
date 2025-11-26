@@ -33,7 +33,6 @@ import AdminSellerStats from "./pages/admin/AdminSellerStats";
 import CodCheckout from "./payment/CODCheckout";
 import OnlineCheckout from "./payment/OnlineCheckout";
 import MomoCheckout from "./payment/MomoCheckout";
-import VNPayCheckout from "./payment/VNPayCheckout";
 import OrderConfirmation from "./payment/OrderConfirmation";
 
 // Seller Pages
@@ -113,7 +112,6 @@ function AppContent() {
           <Route path="checkout/cod" element={<CodCheckout />} />
           <Route path="checkout/online" element={<OnlineCheckout />} />
           <Route path="checkout/online/momo" element={<MomoCheckout />} />
-          <Route path="checkout/online/vnpay" element={<VNPayCheckout />} />
           <Route path="order-confirmation" element={<OrderConfirmation />} />
 
           {/* Login/Register Redirect */}

@@ -113,33 +113,29 @@ router.post(
     const { email, password } = req.body;
 
     try {
-      // Find user with password field
       const user = await User.findOne({ email }).select('+password');
       if (!user) {
         return res.status(400).json({ message: 'Invalid email or password' });
       }
 
-      // Check if user is active
       if (!user.isActive) {
         return res.status(403).json({ message: 'Account is deactivated' });
       }
 
-      // Compare password using the model method
       const isMatch = await user.comparePassword(password);
       if (!isMatch) {
         return res.status(400).json({ message: 'Invalid email or password' });
       }
 
-      // Generate JWT token
       const token = jwt.sign(
         { id: user._id, role: user.role },
         process.env.JWT_SECRET || 'default_secret',
         { expiresIn: '7d' }
       );
 
-      // Return user info based on role
+      // 🔥 Return đúng format frontend cần
       const userResponse = {
-        id: user._id,
+        _id: user._id,          // FIXED !!!
         name: user.name,
         email: user.email,
         role: user.role,
@@ -148,24 +144,25 @@ router.post(
         avatar: user.avatar
       };
 
-      // Add seller specific fields if role is seller
       if (user.role === 'seller') {
         userResponse.storeName = user.storeName;
         userResponse.storeAddress = user.storeAddress;
         userResponse.brandId = user.brandId;
       }
 
-      res.json({ 
-        message: 'Login successful', 
-        token, 
+      return res.json({
+        message: 'Login successful',
+        token,
         user: userResponse
       });
+
     } catch (err) {
       console.error('Login error:', err);
       res.status(500).json({ message: 'Server error' });
     }
   }
 );
+
 
 // @route   GET /api/auth/profile
 // @desc    Get user profile
