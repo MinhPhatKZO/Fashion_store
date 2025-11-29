@@ -40,31 +40,32 @@ const OnlineCheckout: React.FC = () => {
 
   // ================== HANDLE MOMO ==================
   const handleMomo = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return toast.error("Bạn chưa đăng nhập");
-      if (cartItems.length === 0) return toast.error("Giỏ hàng trống");
+  const token = localStorage.getItem("token");
+  if (!token) return toast.error("Bạn chưa đăng nhập");
+  if (cartItems.length === 0) return toast.error("Giỏ hàng trống");
 
-      const payloadOrder = {
-        items: cartItems.map((item: any) => ({
-          product: item.productId,
-          quantity: item.quantity,
-        })),
-        shippingAddress: "",
-        paymentMethod: "momo",
-      };
-
-      const res = await axios.post(
-        "http://localhost:5000/api/orders/momo-order",
-        payloadOrder,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      navigate(`/checkout/online/momo?orderId=${res.data.data._id}`);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Lỗi tạo đơn hàng");
-    }
+  const payloadOrder = {
+    items: cartItems.map((item: any) => ({
+      product: item.productId,
+      quantity: item.quantity,
+    })),
+    shippingAddress: "", // hiện tại bạn không bắt địa chỉ
+    paymentMethod: "momo",
   };
+
+  try {
+    const res = await axios.post(
+      "http://localhost:5000/api/orders/momo-order",
+      payloadOrder,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // ✅ Truyền đúng orderId mới tạo sang MomoCheckout
+    navigate(`/checkout/online/momo?orderId=${res.data.data._id}`);
+  } catch (err: any) {
+    toast.error(err.response?.data?.message || "Lỗi tạo đơn hàng");
+  }
+};
 
   return (
     <div className="p-4 max-w-lg mx-auto">

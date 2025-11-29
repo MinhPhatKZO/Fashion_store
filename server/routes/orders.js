@@ -76,6 +76,68 @@ router.post("/vnpay-order", auth, async (req, res) => {
 });
 
 /* =======================================================
+POST: Tạo đơn thanh toán MoMo (không tạo URL MoMo ở đây)
+======================================================= */
+router.post("/momo-order", auth, async (req, res) => {
+  try {
+    const { items, shippingAddress, paymentMethod, notes } = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "Danh sách sản phẩm không hợp lệ" });
+    }
+
+    let totalPrice = 0;
+    const orderItems = [];
+    let seller = null;
+
+    for (const item of items) {
+      const product = await Product.findById(item.product);
+      if (!product) return res.status(400).json({ message: "Product not found" });
+
+      if (!seller) seller = product.seller;
+      else if (seller.toString() !== product.seller.toString())
+        return res.status(400).json({
+          message: "Tất cả sản phẩm phải thuộc cùng 1 người bán",
+        });
+
+      totalPrice += product.price * item.quantity;
+
+      orderItems.push({
+        product: product._id,
+        quantity: item.quantity,
+        price: product.price,
+      });
+    }
+
+    // ======= Tạo đơn hàng MOMO =======
+    const order = new Order({
+      user: getUserId(req),
+      seller,
+      items: orderItems,
+      shippingAddress:
+        typeof shippingAddress === "object"
+          ? JSON.stringify(shippingAddress)
+          : shippingAddress,
+      paymentMethod: "momo",  // ✔ Bắt buộc là momo
+      totalPrice,
+      notes,
+      orderNumber: `MOMO-${Date.now()}`,
+      status: "pending",
+    });
+
+    await order.save();
+
+    // Frontend sẽ gọi API /momo-payment sau khi tạo order
+    res.status(201).json({ success: true, data: order });
+  } catch (error) {
+    console.error("❌ MoMo Create order error:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/* =======================================================
 PATCH: Cập nhật địa chỉ giao hàng
 ======================================================= */
 router.patch("/update-shipping/:id", auth, async (req, res) => {
