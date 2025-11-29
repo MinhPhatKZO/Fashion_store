@@ -1,28 +1,25 @@
-// src/routes/ProtectedRoute.tsx
-import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { RootState } from '../store';
+import React, { ReactNode } from "react";
+import { Navigate, Outlet } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { RootState } from "../store";
 
 interface ProtectedRouteProps {
-  element: React.ReactElement;
-  requiredRole?: 'admin' | 'user' | 'seller';
+  requiredRole?: "admin" | "seller";
+  children?: ReactNode; // cho phép nhận JSX bên trong
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element, requiredRole }) => {
-  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requiredRole, children }) => {
+  const auth = useSelector((state: RootState) => state.auth);
 
-  if (!isAuthenticated) {
-    // Nếu chưa đăng nhập → về trang login
+  if (!auth.isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  if (requiredRole && user?.role !== requiredRole) {
-    // Nếu không đủ quyền → về trang chủ
-    return <Navigate to="/" replace />;
+  if (requiredRole && auth.user?.role !== requiredRole) {
+    return <Navigate to="/not-authorized" replace />;
   }
 
-  return element;
+  return <>{children || <Outlet />}</>; // nếu có children render children, không thì render Outlet
 };
 
 export default ProtectedRoute;

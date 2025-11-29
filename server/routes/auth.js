@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
+const Brand = require('../models/Brands');
 const { auth, adminAuth } = require('../middleware/auth');
 
 
@@ -10,12 +11,15 @@ const router = express.Router();
 // @route   POST /api/auth/register
 // @desc    Register new user
 // @access  Public
+// @route   POST /api/auth/register
 router.post(
   '/register',
   [
-    body('name').notEmpty().withMessage('Name is required'),
-    body('email').isEmail().withMessage('Valid email is required'),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('name').notEmpty(),
+    body('email').isEmail(),
+    body('password').isLength({ min: 6 }),
+    body('phone').notEmpty(),
+    body('address').notEmpty(),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -23,37 +27,44 @@ router.post(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, email, password } = req.body;
+    const {
+      name,
+      email,
+      password,
+      phone,
+      address
+    } = req.body;
 
     try {
-      // Check if user exists
       let user = await User.findOne({ email });
-      if (user) {
-        return res.status(400).json({ message: 'User already exists' });
-      }
+      if (user) return res.status(400).json({ message: "User already exists" });
 
-      // Create new user (password will be hashed by pre-save hook)
       user = new User({
         name,
         email,
         password,
-        role: 'user' // Default role
+        phone,
+        address,
+        role: "user"     // 🔥 role mặc định
       });
 
       await user.save();
-      
-      res.status(201).json({ 
-        message: 'User registered successfully',
+
+      res.status(201).json({
+        message: "User registered successfully",
         user: {
           id: user._id,
           name: user.name,
           email: user.email,
+          phone: user.phone,
+          address: user.address,
           role: user.role
         }
       });
+
     } catch (err) {
-      console.error('Register error:', err);
-      res.status(500).json({ message: 'Server error' });
+      console.error("Register error:", err);
+      res.status(500).json({ message: "Server error" });
     }
   }
 );
@@ -76,33 +87,29 @@ router.post(
     const { email, password } = req.body;
 
     try {
-      // Find user with password field
       const user = await User.findOne({ email }).select('+password');
       if (!user) {
         return res.status(400).json({ message: 'Invalid email or password' });
       }
 
-      // Check if user is active
       if (!user.isActive) {
         return res.status(403).json({ message: 'Account is deactivated' });
       }
 
-      // Compare password using the model method
       const isMatch = await user.comparePassword(password);
       if (!isMatch) {
         return res.status(400).json({ message: 'Invalid email or password' });
       }
 
-      // Generate JWT token
       const token = jwt.sign(
         { id: user._id, role: user.role },
         process.env.JWT_SECRET || 'default_secret',
         { expiresIn: '7d' }
       );
 
-      // Return user info based on role
+      // 🔥 Return đúng format frontend cần
       const userResponse = {
-        id: user._id,
+        _id: user._id,          // FIXED !!!
         name: user.name,
         email: user.email,
         role: user.role,
@@ -111,24 +118,25 @@ router.post(
         avatar: user.avatar
       };
 
-      // Add seller specific fields if role is seller
       if (user.role === 'seller') {
         userResponse.storeName = user.storeName;
         userResponse.storeAddress = user.storeAddress;
         userResponse.brandId = user.brandId;
       }
 
-      res.json({ 
-        message: 'Login successful', 
-        token, 
+      return res.json({
+        message: 'Login successful',
+        token,
         user: userResponse
       });
+
     } catch (err) {
       console.error('Login error:', err);
       res.status(500).json({ message: 'Server error' });
     }
   }
 );
+
 
 // @route   GET /api/auth/profile
 // @desc    Get user profile

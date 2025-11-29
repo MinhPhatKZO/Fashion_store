@@ -56,7 +56,11 @@ const Header: React.FC = () => {
     localStorage.clear();
     setUserName(null);
     setItemCount(0);
+<<<<<<< HEAD
     navigate("/login");
+=======
+    navigate(0);
+>>>>>>> tan_new1
   };
 
   return (

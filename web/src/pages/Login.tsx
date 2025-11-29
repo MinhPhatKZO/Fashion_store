@@ -60,7 +60,11 @@ export default function Login() {
           // Nếu là admin, điều hướng vào admin dashboard
           if (user.role === "admin") navigate("/admin");
           else if (user.role === "seller") navigate("/seller");
+<<<<<<< HEAD
           else navigate("/"); // user bình thường
+=======
+          else navigate(0); // user bình thường
+>>>>>>> tan_new1
         }, 500);
       } else {
         setMessage({

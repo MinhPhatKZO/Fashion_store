@@ -27,9 +27,19 @@ const AdminHeader: React.FC = () => {
   }, []);
 
   const handleLogout = () => {
+<<<<<<< HEAD
     dispatch(logout());
     localStorage.removeItem('localCart');
     navigate('/login');
+=======
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userRole');
+    dispatch(logout());
+    localStorage.removeItem('localCart');
+    navigate(0);
+>>>>>>> tan_new1
   };
 
   return (

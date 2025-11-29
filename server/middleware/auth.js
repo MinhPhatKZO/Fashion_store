@@ -1,33 +1,59 @@
-// middleware/auth.js (ĐÃ SỬA)
 const jwt = require("jsonwebtoken");
 
 const auth = (req, res, next) => {
-  const authHeader = req.headers.authorization;
+  const header = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Không có token" });
-  }
+  if (!header || !header.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Không có token" });
+  }
 
-  const token = authHeader.split(" ")[1];
+  const token = header.split(" ")[1];
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "default_secret");
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "default_secret"
+    );
 
-    req.user = decoded;
-    // ⭐ SỬA LỖI TẠI ĐÂY: Dùng 'id' thay vì 'userId'
-    req.userId = decoded.id; // Lấy ID từ trường 'id' trong JWT
+    // decoded = { id, role, email, ... }
+    if (!decoded || !decoded.id) {
+      return res.status(401).json({ message: "Token không hợp lệ hoặc thiếu ID" });
+    }
 
-    next();
-  } catch (err) {
-    return res.status(401).json({ message: "Token không hợp lệ" });
-  }
+    req.user = decoded;
+    req.userId = decoded.id;
+
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: "Token không hợp lệ" });
+  }
 };
+
 
 const adminAuth = (req, res, next) => {
-  if (!req.user || req.user.role !== "admin") {
-    return res.status(403).json({ message: "Không đủ quyền truy cập" });
-  }
-  next();
+  if (!req.user || !req.user.role) {
+    return res.status(403).json({ message: "Không xác định quyền" });
+  }
+
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ message: "Không đủ quyền admin" });
+  }
+
+  next();
 };
 
-module.exports = { auth, adminAuth };
+
+const sellerAuth = (req, res, next) => {
+  if (!req.user || !req.user.role) {
+    return res.status(403).json({ message: "Không xác định quyền" });
+  }
+
+  if (req.user.role !== "seller") {
+    return res.status(403).json({ message: "Chỉ seller mới được truy cập" });
+  }
+
+  next();
+};
+
+
+module.exports = { auth, adminAuth, sellerAuth };

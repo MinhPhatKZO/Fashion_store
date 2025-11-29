@@ -1,17 +1,14 @@
 // src/pages/Register.tsx
-import React, { useState, ChangeEvent } from "react";
+import React, { useState, useEffect, ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import axios from "axios";
+import Select from "react-select";
 import { authAPI } from "../services/api";
 
-// Kiểu dữ liệu trả về từ backend khi đăng ký
-export interface RegisterResponse {
-  message: string;
-  user: {
-    _id: string;
-    name: string;
-    email: string;
-  };
+interface Brand {
+  _id: string;
+  name: string;
 }
 
 interface Message {
@@ -20,18 +17,36 @@ interface Message {
 }
 
 export default function Register() {
+  const navigate = useNavigate();
+
   const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
+    role: "user",
+    phone: "",
+    address: ""
   });
+
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const navigate = useNavigate();
+  // Lấy brands từ backend
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/brands");
+        setBrands(res.data);
+      } catch (err) {
+        console.error("Lỗi khi lấy brands:", err);
+      }
+    };
+    fetchBrands();
+  }, []);
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
@@ -41,30 +56,17 @@ export default function Register() {
 
     try {
       const res = await authAPI.register(form);
-      console.log("Register response:", res.data); // Debug
-
-      // Lấy user trực tiếp từ res.data
-      const user = res.data.user;
-
-      if (!user) throw new Error("Đăng ký thất bại. Dữ liệu trả về không hợp lệ.");
-
-      setMessage({
-        text: "Đăng ký thành công! Chuyển hướng sang đăng nhập...",
-        type: "success"
-      });
-
+      setMessage({ text: "Đăng ký thành công! Chuyển hướng sang đăng nhập...", type: "success" });
       setTimeout(() => navigate("/login"), 1500);
     } catch (err: any) {
       setMessage({
         text: err.response?.data?.message || err.message || "Đăng ký thất bại. Vui lòng thử lại.",
-        type: "error"
+        type: "error",
       });
     } finally {
       setIsLoading(false);
     }
   };
-
-
 
   const messageColor =
     message?.type === "success"
@@ -72,14 +74,14 @@ export default function Register() {
       : "bg-red-100 border-red-400 text-red-700";
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-50">
+    <div className="flex justify-center items-center min-h-screen bg-gray-50 p-4">
       <motion.div
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 100 }}
-        className="bg-white w-[400px] p-8 rounded-xl shadow-2xl border border-gray-100"
+        className="bg-white w-full max-w-md p-8 rounded-xl shadow-2xl border border-gray-100"
       >
-        <h2 className="text-3xl text-center text-gray-800 font-extrabold mb-8">Đăng ký</h2>
+        <h2 className="text-3xl text-center text-gray-800 font-extrabold mb-6">Đăng ký</h2>
 
         {message && (
           <motion.div
@@ -93,6 +95,7 @@ export default function Register() {
         )}
 
         <div className="space-y-4">
+          {/* Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
             <input
@@ -105,6 +108,7 @@ export default function Register() {
             />
           </div>
 
+          {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
@@ -117,13 +121,14 @@ export default function Register() {
             />
           </div>
 
+          {/* Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
             <div className="flex items-center border border-gray-300 rounded-lg focus-within:ring-sky-500 focus-within:border-sky-500 transition">
               <input
                 name="password"
                 value={form.password}
-                onChange={handleChange}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
                 className="w-full p-3 bg-transparent outline-none rounded-l-lg"
                 type={showPassword ? "text" : "password"}
                 disabled={isLoading}
@@ -138,11 +143,46 @@ export default function Register() {
               </button>
             </div>
           </div>
+
+          {/* Phone */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
+            <input
+              name="phone"
+              value={form.phone}
+              onChange={handleChange}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-sky-500 focus:border-sky-500 outline-none transition"
+              type="text"
+              disabled={isLoading}
+            />
+          </div>
+
+          {/* Address */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ</label>
+            <input
+              name="address"
+              value={form.address}
+              onChange={handleChange}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-sky-500 focus:border-sky-500 outline-none transition"
+              type="text"
+              disabled={isLoading}
+            />
+          </div>
+
+
         </div>
 
         <motion.button
           onClick={handleSubmit}
-          disabled={isLoading || !form.name || !form.email || !form.password}
+          disabled={
+            isLoading ||
+            !form.name ||
+            !form.email ||
+            !form.password ||
+            !form.phone ||
+            !form.address 
+          }
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           className="w-full mt-6 bg-sky-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-sky-700 transition duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
