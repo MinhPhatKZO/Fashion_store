@@ -27,7 +27,6 @@ const AdminHeader: React.FC = () => {
   }, []);
 
   const handleLogout = () => {
-<<<<<<< HEAD
     dispatch(logout());
     localStorage.removeItem('localCart');
     navigate('/login');

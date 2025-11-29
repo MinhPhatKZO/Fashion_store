@@ -58,9 +58,6 @@ const Header: React.FC = () => {
     setItemCount(0);
 <<<<<<< HEAD
     navigate("/login");
-=======
-    navigate(0);
->>>>>>> tan_new1
   };
 
   return (
