@@ -1,26 +1,64 @@
-// src/payment/VNPayCheckout.tsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 interface OrderData {
-  orderNumber?: string;
-  totalAmount: number;
+  _id: string;
+  orderNumber: string;
+  totalPrice: number;
   items: any[];
-  seller: string;
+  shippingAddress?: string;
 }
 
 const VNPayCheckout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const token = localStorage.getItem("token");
 
-  const orderData: OrderData = location.state?.orderData || null;
+  const orderIdFromState = location.state?.orderData?._id;
+  const query = new URLSearchParams(location.search);
+  const orderIdFromQuery = query.get("orderId");
+
+  const [orderData, setOrderData] = useState<OrderData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const [fullname, setFullname] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
 
-  if (!orderData)
-    return <div className="p-6 text-red-500">Không tìm thấy đơn hàng</div>;
+  // === Fetch order từ backend để đảm bảo tồn tại
+  useEffect(() => {
+    const orderId = orderIdFromState || orderIdFromQuery;
+    if (!orderId) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchOrder = async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/orders/${orderId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setOrderData(data.order);
+        } else {
+          alert("Không tìm thấy đơn hàng");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Lỗi khi lấy đơn hàng");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrder();
+  }, [orderIdFromState, orderIdFromQuery, token]);
+
+  if (loading) return <div className="p-6">Đang tải đơn hàng...</div>;
+  if (!orderData) return <div className="p-6 text-red-500">Không tìm thấy đơn hàng</div>;
 
   const handleSubmit = async () => {
     if (!fullname || !phone || !address) {
@@ -28,58 +66,63 @@ const VNPayCheckout: React.FC = () => {
       return;
     }
 
-    try {
-      // 1️⃣ Tạo đơn hàng trước (status = pending)
-      const orderRes = await fetch("http://localhost:5000/api/orders/create-vnpay-order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`
-        },
-        body: JSON.stringify({
-          items: orderData.items,
-          seller: orderData.seller,
-          totalPrice: orderData.totalAmount,
-          shippingAddress: `Người nhận: ${fullname}, ĐT: ${phone}, Địa chỉ: ${address}`,
-        }),
-      });
+    if (!token) {
+      alert("Bạn cần đăng nhập để thanh toán!");
+      navigate("/login");
+      return;
+    }
 
-      const order = await orderRes.json();
-      if (!order.success) {
-        alert("Không tạo được đơn hàng");
+    try {
+      // === Cập nhật shippingAddress
+      const updateRes = await fetch(
+        `http://localhost:5000/api/orders/update-shipping/${orderData._id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            shippingAddress: `Người nhận: ${fullname}, ĐT: ${phone}, Địa chỉ: ${address}`,
+          }),
+        }
+      );
+
+      const updateData = await updateRes.json();
+      if (!updateData.success) {
+        alert("Không thể cập nhật địa chỉ giao hàng");
         return;
       }
 
-      // 2️⃣ Tạo URL thanh toán VNPay
+      // === Tạo URL thanh toán VNPAY
       const payRes = await fetch("http://localhost:5000/api/vnpay/create_payment_url", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: orderData.totalAmount,
-          orderId: order.orderId,
-        }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ orderId: orderData._id, amount: orderData.totalPrice }),
       });
+      console.log("📤 Response status:", payRes.status); // Thêm log
 
-      const vnPay = await payRes.json();
-
-      if (vnPay.paymentUrl) {
-        window.location.href = vnPay.paymentUrl;
+      const payData = await payRes.json();
+      console.log("📦 Response data:", payData); // Thêm log
+      if (payData.paymentUrl) {
+        window.location.href = payData.paymentUrl;
       } else {
         alert("Không tạo được URL thanh toán VNPay");
       }
-
     } catch (err) {
       console.error(err);
-      alert("Lỗi server");
+      alert("Lỗi server!");
     }
   };
 
   return (
     <div className="max-w-3xl mx-auto py-12 px-4">
       <h2 className="text-3xl font-bold text-blue-600 mb-4">Thanh toán VNPay</h2>
-
       <div className="bg-white p-6 rounded-xl shadow-md space-y-4">
-        <p><strong>Tổng tiền:</strong> {orderData.totalAmount.toLocaleString("vi-VN")} ₫</p>
+        <p><strong>Tổng tiền:</strong> {orderData.totalPrice.toLocaleString("vi-VN")} ₫</p>
 
         <h3 className="text-xl font-semibold mt-4">Nhập thông tin giao hàng</h3>
 

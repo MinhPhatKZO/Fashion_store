@@ -27,13 +27,23 @@ const VariantsManager: React.FC<Props> = ({ productId }) => {
   const [variants, setVariants] = useState<Variant[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<Partial<Variant>>({});
 
-  // Fetch variants
+  const [form, setForm] = useState<Partial<Variant>>({
+    sku: "",
+    size: "",
+    color: "",
+    price: 0,
+    comparePrice: 0,
+    stock: 0,
+  });
+
+  /* ===============================
+     FETCH VARIANTS
+  =============================== */
   const fetchVariants = async () => {
     try {
       const res = await api.get(`/seller/products/${productId}/variants`);
-      setVariants(res.data.data || []);
+      setVariants(res.data.variants || []); // backend return {success, variants}
     } catch (err) {
       console.error("Lỗi lấy variants", err);
     } finally {
@@ -45,64 +55,97 @@ const VariantsManager: React.FC<Props> = ({ productId }) => {
     fetchVariants();
   }, [productId]);
 
-  // Handle add/update variant
+  /* ===============================
+     HANDLE SUBMIT (ADD + EDIT)
+  =============================== */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const payload = {
+      sku: form.sku,
+      size: form.size,
+      color: form.color,
+      price: Number(form.price),
+      comparePrice: Number(form.comparePrice),
+      stock: Number(form.stock),
+    };
+
     try {
       if (editingId) {
-        // Update
+        // UPDATE
         const res = await api.put(
           `/seller/products/${productId}/variants/${editingId}`,
-          form
+          payload
         );
+
         setVariants((prev) =>
           prev.map((v) => (v._id === editingId ? res.data.variant : v))
         );
-        setEditingId(null);
       } else {
-        // Create
+        // CREATE
         const res = await api.post(
           `/seller/products/${productId}/variants`,
-          form
+          payload
         );
         setVariants((prev) => [...prev, res.data.variant]);
       }
-      setForm({});
+
+      setForm({
+        sku: "",
+        size: "",
+        color: "",
+        price: 0,
+        comparePrice: 0,
+        stock: 0,
+      });
+      setEditingId(null);
     } catch (err) {
       console.error("Lỗi thêm/sửa variant", err);
     }
   };
 
-  // Handle delete
+  /* ===============================
+     HANDLE DELETE
+  =============================== */
   const handleDelete = async (id: string) => {
     if (!window.confirm("Bạn chắc chắn muốn xóa biến thể này?")) return;
+
     try {
       await api.delete(`/seller/products/${productId}/variants/${id}`);
+
       setVariants((prev) => prev.filter((v) => v._id !== id));
     } catch (err) {
       console.error("Lỗi xóa variant", err);
     }
   };
 
-  // Start editing
+  /* ===============================
+      START EDITING
+  =============================== */
   const startEdit = (variant: Variant) => {
     setEditingId(variant._id);
     setForm({ ...variant });
   };
 
+  /* ===============================
+      RENDER
+  =============================== */
   return (
     <div className="bg-white p-6 rounded-xl shadow-md mt-6">
       <h2 className="text-xl font-bold mb-4">Quản lý biến thể</h2>
 
-      {/* Form add/edit */}
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-6 gap-3 mb-4">
+      {/* FORM ADD/EDIT */}
+      <form
+        onSubmit={handleSubmit}
+        className="grid grid-cols-1 sm:grid-cols-6 gap-3 mb-6"
+      >
         <input
           type="text"
           placeholder="SKU"
           required
           value={form.sku || ""}
           onChange={(e) => setForm({ ...form, sku: e.target.value })}
-          className="border rounded p-2 col-span-1"
+          className="border rounded p-2"
         />
         <input
           type="text"
@@ -110,7 +153,7 @@ const VariantsManager: React.FC<Props> = ({ productId }) => {
           required
           value={form.size || ""}
           onChange={(e) => setForm({ ...form, size: e.target.value })}
-          className="border rounded p-2 col-span-1"
+          className="border rounded p-2"
         />
         <input
           type="text"
@@ -118,7 +161,7 @@ const VariantsManager: React.FC<Props> = ({ productId }) => {
           required
           value={form.color || ""}
           onChange={(e) => setForm({ ...form, color: e.target.value })}
-          className="border rounded p-2 col-span-1"
+          className="border rounded p-2"
         />
         <input
           type="number"
@@ -126,14 +169,16 @@ const VariantsManager: React.FC<Props> = ({ productId }) => {
           required
           value={form.price || ""}
           onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
-          className="border rounded p-2 col-span-1"
+          className="border rounded p-2"
         />
         <input
           type="number"
           placeholder="Compare Price"
           value={form.comparePrice || ""}
-          onChange={(e) => setForm({ ...form, comparePrice: Number(e.target.value) })}
-          className="border rounded p-2 col-span-1"
+          onChange={(e) =>
+            setForm({ ...form, comparePrice: Number(e.target.value) })
+          }
+          className="border rounded p-2"
         />
         <input
           type="number"
@@ -141,20 +186,33 @@ const VariantsManager: React.FC<Props> = ({ productId }) => {
           required
           value={form.stock || ""}
           onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })}
-          className="border rounded p-2 col-span-1"
+          className="border rounded p-2"
         />
-        <div className="flex items-center gap-2 col-span-full">
+
+        <div className="col-span-full flex gap-2 mt-2">
           <button
             type="submit"
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-1"
+            className="bg-green-600 text-white px-4 py-2 rounded flex items-center gap-1 hover:bg-green-700"
           >
-            <Save className="w-4 h-4" /> {editingId ? "Lưu" : "Thêm biến thể"}
+            <Save className="w-4 h-4" />
+            {editingId ? "Lưu biến thể" : "Thêm biến thể"}
           </button>
+
           {editingId && (
             <button
               type="button"
-              onClick={() => { setEditingId(null); setForm({}); }}
-              className="bg-gray-300 px-4 py-2 rounded flex items-center gap-1 hover:bg-gray-400"
+              onClick={() => {
+                setEditingId(null);
+                setForm({
+                  sku: "",
+                  size: "",
+                  color: "",
+                  price: 0,
+                  comparePrice: 0,
+                  stock: 0,
+                });
+              }}
+              className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400 flex items-center gap-1"
             >
               <X className="w-4 h-4" /> Hủy
             </button>
@@ -162,28 +220,34 @@ const VariantsManager: React.FC<Props> = ({ productId }) => {
         </div>
       </form>
 
-      {/* List */}
+      {/* LIST */}
       {loading ? (
         <div className="text-center py-6">Đang tải biến thể...</div>
       ) : variants.length === 0 ? (
-        <div className="text-gray-500 text-center py-6">Chưa có biến thể nào</div>
+        <div className="text-gray-500 text-center py-6">
+          Chưa có biến thể nào
+        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           {variants.map((v) => (
-            <div key={v._id} className="border rounded p-3 flex flex-col gap-2">
+            <div key={v._id} className="border rounded p-3">
               <div><b>SKU:</b> {v.sku}</div>
               <div><b>Size:</b> {v.size}</div>
               <div><b>Color:</b> {v.color}</div>
               <div><b>Price:</b> {v.price.toLocaleString()} đ</div>
-              {v.comparePrice && <div><b>Compare:</b> {v.comparePrice.toLocaleString()} đ</div>}
+              {v.comparePrice ? (
+                <div><b>Compare:</b> {v.comparePrice.toLocaleString()} đ</div>
+              ) : null}
               <div><b>Stock:</b> {v.stock}</div>
-              <div className="flex gap-2 mt-2">
+
+              <div className="flex gap-2 mt-3">
                 <button
                   onClick={() => startEdit(v)}
                   className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 flex items-center gap-1"
                 >
                   <Edit className="w-4 h-4" /> Sửa
                 </button>
+
                 <button
                   onClick={() => handleDelete(v._id)}
                   className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 flex items-center gap-1"

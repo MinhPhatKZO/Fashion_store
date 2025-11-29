@@ -11,18 +11,15 @@ const router = express.Router();
 // @route   POST /api/auth/register
 // @desc    Register new user
 // @access  Public
+// @route   POST /api/auth/register
 router.post(
   '/register',
   [
-    body('name').notEmpty().withMessage('Name is required'),
-    body('email').isEmail().withMessage('Valid email is required'),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-    body('role').optional().isIn(['user', 'seller']).withMessage('Role must be user or seller'),
-    body('phone').notEmpty().withMessage('Phone is required'),
-    body('address').notEmpty().withMessage('Address is required'),
-    body('brandId').optional().isMongoId().withMessage('brandId must be a valid MongoDB ObjectId'),
-    body('storeName').optional().notEmpty().withMessage('Store name is required for seller'),
-    body('storeAddress').optional().notEmpty().withMessage('Store address is required for seller')
+    body('name').notEmpty(),
+    body('email').isEmail(),
+    body('password').isLength({ min: 6 }),
+    body('phone').notEmpty(),
+    body('address').notEmpty(),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -34,67 +31,44 @@ router.post(
       name,
       email,
       password,
-      role = 'user',
       phone,
-      address,
-      brandId,
-      storeName,
-      storeAddress
+      address
     } = req.body;
 
     try {
-      // Kiểm tra user đã tồn tại chưa
       let user = await User.findOne({ email });
-      if (user) {
-        return res.status(400).json({ message: 'User already exists' });
-      }
+      if (user) return res.status(400).json({ message: "User already exists" });
 
-      // Nếu là seller, bắt buộc brandId, storeName, storeAddress
-      if (role === 'seller') {
-        if (!brandId || !storeName || !storeAddress) {
-          return res.status(400).json({ message: 'Seller must provide brandId, storeName, storeAddress' });
-        }
-        const brand = await Brand.findById(brandId);
-        if (!brand) {
-          return res.status(400).json({ message: 'Brand not found' });
-        }
-      }
-
-      // Tạo user mới
       user = new User({
         name,
         email,
         password,
-        role,
         phone,
         address,
-        brandId: role === 'seller' ? brandId : null,
-        storeName: role === 'seller' ? storeName : null,
-        storeAddress: role === 'seller' ? storeAddress : null
+        role: "user"     // 🔥 role mặc định
       });
 
       await user.save();
 
       res.status(201).json({
-        message: 'User registered successfully',
+        message: "User registered successfully",
         user: {
           id: user._id,
           name: user.name,
           email: user.email,
-          role: user.role,
           phone: user.phone,
           address: user.address,
-          brandId: user.brandId,
-          storeName: user.storeName,
-          storeAddress: user.storeAddress
+          role: user.role
         }
       });
+
     } catch (err) {
-      console.error('Register error:', err);
-      res.status(500).json({ message: 'Server error' });
+      console.error("Register error:", err);
+      res.status(500).json({ message: "Server error" });
     }
   }
 );
+
 // @route   POST /api/auth/login
 // @desc    Login user
 // @access  Public

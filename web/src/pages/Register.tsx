@@ -25,10 +25,7 @@ export default function Register() {
     password: "",
     role: "user",
     phone: "",
-    address: "",
-    brandId: "",
-    storeName: "",
-    storeAddress: "",
+    address: ""
   });
 
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -173,61 +170,7 @@ export default function Register() {
             />
           </div>
 
-          {/* Role */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Vai trò</label>
-            <select
-              name="role"
-              value={form.role}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-sky-500 focus:border-sky-500 outline-none transition"
-            >
-              <option value="user">User</option>
-              <option value="seller">Seller</option>
-            </select>
-          </div>
 
-          {/* Seller-only fields */}
-          {form.role === "seller" && (
-            <>
-              {/* Brand */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Chọn Brand</label>
-                <Select
-                  options={brands.map((b) => ({ value: b._id, label: b.name }))}
-                  onChange={(option: any) => setForm({ ...form, brandId: option?.value || "" })}
-                  placeholder="Chọn brand..."
-                  isClearable
-                />
-              </div>
-
-              {/* Store Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tên cửa hàng</label>
-                <input
-                  name="storeName"
-                  value={form.storeName}
-                  onChange={handleChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-sky-500 focus:border-sky-500 outline-none transition"
-                  type="text"
-                  disabled={isLoading}
-                />
-              </div>
-
-              {/* Store Address */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ cửa hàng</label>
-                <input
-                  name="storeAddress"
-                  value={form.storeAddress}
-                  onChange={handleChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-sky-500 focus:border-sky-500 outline-none transition"
-                  type="text"
-                  disabled={isLoading}
-                />
-              </div>
-            </>
-          )}
         </div>
 
         <motion.button
@@ -238,8 +181,7 @@ export default function Register() {
             !form.email ||
             !form.password ||
             !form.phone ||
-            !form.address ||
-            (form.role === "seller" && (!form.brandId || !form.storeName || !form.storeAddress))
+            !form.address 
           }
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}

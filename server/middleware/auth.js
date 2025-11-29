@@ -11,30 +11,49 @@ const auth = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(
-      token, 
+      token,
       process.env.JWT_SECRET || "default_secret"
     );
+
+    // decoded = { id, role, email, ... }
+    if (!decoded || !decoded.id) {
+      return res.status(401).json({ message: "Token không hợp lệ hoặc thiếu ID" });
+    }
 
     req.user = decoded;
     req.userId = decoded.id;
 
     next();
-
   } catch (error) {
     return res.status(401).json({ message: "Token không hợp lệ" });
   }
 };
 
+
 const adminAuth = (req, res, next) => {
-  if (req.user.role !== "admin")
+  if (!req.user || !req.user.role) {
+    return res.status(403).json({ message: "Không xác định quyền" });
+  }
+
+  if (req.user.role !== "admin") {
     return res.status(403).json({ message: "Không đủ quyền admin" });
+  }
+
   next();
 };
 
+
 const sellerAuth = (req, res, next) => {
-  if (req.user.role !== "seller")
+  if (!req.user || !req.user.role) {
+    return res.status(403).json({ message: "Không xác định quyền" });
+  }
+
+  if (req.user.role !== "seller") {
     return res.status(403).json({ message: "Chỉ seller mới được truy cập" });
+  }
+
   next();
 };
+
 
 module.exports = { auth, adminAuth, sellerAuth };

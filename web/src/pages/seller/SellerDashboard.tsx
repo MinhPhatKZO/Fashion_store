@@ -108,21 +108,6 @@ useEffect(() => {
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white shadow-md flex flex-col">
-        <div className="p-6 font-bold text-xl border-b border-gray-200">Seller Dashboard</div>
-        <nav className="flex-1 p-4 space-y-2">
-          <div className="flex items-center gap-2 p-2 rounded bg-gray-200">
-            <Box className="w-5 h-5" /> Dashboard
-          </div>
-        </nav>
-        <button
-          onClick={handleLogout}
-          className="p-4 border-t mt-auto hover:bg-gray-200 transition flex items-center gap-2"
-        >
-          <LogOut className="w-5 h-5" /> Logout
-        </button>
-      </aside>
 
       {/* Main content */}
       <main className="flex-1 p-6 overflow-auto">

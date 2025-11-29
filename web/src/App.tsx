@@ -25,6 +25,7 @@ import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
 import Wishlist from "./pages/Wishlist";
 import NotFound from "./pages/NotFound";
+import VNPayCheckout from "./payment/VNPayCheckout";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminPromotion from "./pages/admin/AdminPromotion";
 import AdminSellerStats from "./pages/admin/AdminSellerStats";
@@ -113,6 +114,7 @@ function AppContent() {
           <Route path="checkout/online" element={<OnlineCheckout />} />
           <Route path="checkout/online/momo" element={<MomoCheckout />} />
           <Route path="order-confirmation" element={<OrderConfirmation />} />
+          <Route path="checkout/vnpay" element={<VNPayCheckout />} />
 
           {/* Login/Register Redirect */}
           <Route path="login" element={<LoginRedirect />} />

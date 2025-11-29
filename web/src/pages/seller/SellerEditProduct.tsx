@@ -4,8 +4,6 @@ import axios from "axios";
 import VariantsManager from "./VariantsManager";
 import { Plus, X } from "lucide-react";
 
-type ImageItem = { url: string; isPrimary?: boolean };
-
 type Product = {
   _id: string;
   name: string;
@@ -13,15 +11,14 @@ type Product = {
   stock: number;
   brandId?: string;
   categoryId?: string;
-  images: ImageItem[];
+  images: string[]; // backend trả array string
 };
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+const API = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
 const api = axios.create({
-  baseURL: API_BASE,
+  baseURL: API,
   headers: {
-    "Content-Type": "application/json",
     Authorization: `Bearer ${localStorage.getItem("token")}`,
   },
 });
@@ -32,7 +29,6 @@ const SellerEditProduct: React.FC = () => {
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
-  const [images, setImages] = useState<ImageItem[]>([]);
 
   const [form, setForm] = useState({
     name: "",
@@ -42,169 +38,205 @@ const SellerEditProduct: React.FC = () => {
     categoryId: "",
   });
 
-  // Lấy thông tin sản phẩm
+  const [images, setImages] = useState<string[]>([]);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+
+  // ============================
+  // GET PRODUCT
+  // ============================
   useEffect(() => {
-    const fetchProduct = async () => {
+    const loadProduct = async () => {
       try {
         const res = await api.get(`/seller/products/${id}`);
-        setProduct(res.data);
+        const p: Product = res.data.product;
+
+        setProduct(p);
         setForm({
-          name: res.data.name,
-          price: res.data.price,
-          stock: res.data.stock,
-          brandId: res.data.brandId || "",
-          categoryId: res.data.categoryId || "",
+          name: p.name,
+          price: p.price,
+          stock: p.stock,
+          brandId: p.brandId || "",
+          categoryId: p.categoryId || "",
         });
-        setImages(res.data.images || []);
+
+        setImages(p.images ?? []);
       } catch (err) {
-        console.error("Lỗi lấy sản phẩm", err);
-      } finally {
-        setLoading(false);
+        console.error("GET PRODUCT ERROR", err);
+        alert("Không thể tải dữ liệu sản phẩm");
       }
+      setLoading(false);
     };
-    fetchProduct();
+
+    loadProduct();
   }, [id]);
 
-  // Handle submit form update product
-  const handleSubmit = async (e: React.FormEvent) => {
+  // ============================
+  // UPDATE PRODUCT
+  // ============================
+  const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.put(`/seller/products/${id}`, { ...form, images });
+      await api.put(`/seller/products/${id}`, {
+        ...form,
+        images, // mảng string
+      });
+
       alert("Cập nhật sản phẩm thành công!");
       navigate("/seller/products");
     } catch (err) {
-      console.error("Lỗi cập nhật sản phẩm", err);
-      alert("Lỗi cập nhật sản phẩm");
+      console.error("UPDATE ERROR:", err);
+      alert("Không thể cập nhật sản phẩm");
     }
   };
 
-  // Handle image upload
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    const files = Array.from(e.target.files);
-    const newImages = files.map((file) => ({
-      url: URL.createObjectURL(file),
-      isPrimary: false,
-    }));
-    setImages((prev) => [...prev, ...newImages]);
+  // ============================
+  // UPLOAD ẢNH MỚI → backend
+  // ============================
+  const handleUploadImages = async () => {
+    if (newFiles.length === 0) return alert("Chưa chọn ảnh!");
+
+    const fd = new FormData();
+    newFiles.forEach((file) => fd.append("images", file));
+
+    try {
+      const res = await api.post(`/seller/products/${id}/images`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      setImages(res.data.product.images); // cập nhật từ backend
+      setNewFiles([]);
+      alert("Upload ảnh thành công!");
+    } catch (err) {
+      console.error("UPLOAD ERROR", err);
+      alert("Upload ảnh thất bại");
+    }
   };
 
-  const handleRemoveImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
+  // ============================
+  // REMOVE IMAGE (chỉ xoá local)
+  // ============================
+  const removeImage = (index: number) => {
+    const updated = images.filter((_, i) => i !== index);
+    setImages(updated);
   };
 
-  const setPrimaryImage = (index: number) => {
-    setImages((prev) =>
-      prev.map((img, i) => ({ ...img, isPrimary: i === index }))
-    );
-  };
-
-  if (loading) return <div className="p-6">Đang tải sản phẩm...</div>;
-  if (!product) return <div className="p-6 text-red-500">Sản phẩm không tồn tại</div>;
+  // ============================
+  // RENDER
+  // ============================
+  if (loading) return <div className="p-6">Đang tải...</div>;
+  if (!product) return <div className="p-6 text-red-500">Không tìm thấy sản phẩm</div>;
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Sửa sản phẩm</h1>
+      <h1 className="text-2xl font-bold mb-6">Chỉnh sửa sản phẩm</h1>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Thông tin cơ bản */}
+      <form
+        onSubmit={handleSaveProduct}
+        className="grid grid-cols-1 md:grid-cols-2 gap-6"
+      >
+        {/* LEFT SIDE: FORM */}
         <div className="flex flex-col gap-4">
           <input
-            type="text"
-            placeholder="Tên sản phẩm"
+            className="border p-2 rounded"
             value={form.name}
+            placeholder="Tên sản phẩm"
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="border p-2 rounded"
             required
           />
+
           <input
             type="number"
-            placeholder="Giá"
+            className="border p-2 rounded"
             value={form.price}
+            placeholder="Giá"
             onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
-            className="border p-2 rounded"
             required
           />
+
           <input
             type="number"
-            placeholder="Số lượng kho"
-            value={form.stock}
-            onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })}
             className="border p-2 rounded"
+            value={form.stock}
+            placeholder="Kho"
+            onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })}
             required
           />
+
           <input
-            type="text"
-            placeholder="Thương hiệu"
+            className="border p-2 rounded"
             value={form.brandId}
+            placeholder="Brand ID"
             onChange={(e) => setForm({ ...form, brandId: e.target.value })}
-            className="border p-2 rounded"
           />
+
           <input
-            type="text"
-            placeholder="Danh mục"
-            value={form.categoryId}
-            onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
             className="border p-2 rounded"
+            value={form.categoryId}
+            placeholder="Category ID"
+            onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
           />
         </div>
 
-        {/* Quản lý hình ảnh */}
-        <div className="flex flex-col gap-4">
-          <label className="flex items-center gap-2 cursor-pointer bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 w-max">
-            <Plus className="w-4 h-4" /> Thêm ảnh
+        {/* RIGHT SIDE: IMAGES */}
+        <div className="flex flex-col gap-3">
+          {/* Upload new images */}
+          <label className="cursor-pointer bg-blue-600 text-white px-3 py-2 rounded w-max flex items-center gap-2">
+            <Plus size={16} /> Chọn ảnh mới
             <input
               type="file"
               multiple
               accept="image/*"
               className="hidden"
-              onChange={handleImageUpload}
+              onChange={(e) => {
+                if (!e.target.files) return;
+                setNewFiles(Array.from(e.target.files));
+              }}
             />
           </label>
+
+          {newFiles.length > 0 && (
+            <button
+              type="button"
+              onClick={handleUploadImages}
+              className="bg-green-600 text-white px-4 py-2 rounded"
+            >
+              Upload ảnh ({newFiles.length})
+            </button>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             {images.map((img, idx) => (
               <div key={idx} className="relative border rounded overflow-hidden">
-                <img src={img.url} alt={`Ảnh ${idx}`} className="w-full h-32 object-cover" />
+                <img
+                  src={API.replace("/api", "") + img}
+                  alt=""
+                  className="w-full h-32 object-cover"
+                />
+
                 <button
                   type="button"
-                  onClick={() => handleRemoveImage(idx)}
-                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                  onClick={() => removeImage(idx)}
+                  className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1"
                 >
-                  <X className="w-3 h-3" />
+                  <X size={14} />
                 </button>
-                {!img.isPrimary && (
-                  <button
-                    type="button"
-                    onClick={() => setPrimaryImage(idx)}
-                    className="absolute bottom-1 left-1 bg-green-500 text-white text-xs px-2 py-1 rounded hover:bg-green-600"
-                  >
-                    Set Primary
-                  </button>
-                )}
-                {img.isPrimary && (
-                  <span className="absolute bottom-1 left-1 bg-yellow-400 text-black text-xs px-2 py-1 rounded">
-                    Primary
-                  </span>
-                )}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Submit button */}
-        <div className="col-span-full flex justify-end mt-4">
-          <button
-            type="submit"
-            className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition"
-          >
-            Cập nhật sản phẩm
+        {/* SAVE */}
+        <div className="col-span-full flex justify-end">
+          <button className="bg-green-700 text-white px-6 py-2 rounded">
+            Lưu thay đổi
           </button>
         </div>
       </form>
 
-      {/* Variants */}
-      <VariantsManager productId={product._id} />
+      {/* VARIANTS */}
+      <div className="mt-10">
+        <VariantsManager productId={product._id} />
+      </div>
     </div>
   );
 };
