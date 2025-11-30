@@ -1,30 +1,69 @@
 const express = require('express');
 const crypto = require('crypto');
+const https = require('https');
+
 const router = express.Router();
 
-// POST /api/momo/payment
+/* =============================================
+   CHECK ENV
+============================================= */
+if (!process.env.MOMO_PARTNER_CODE ||
+    !process.env.MOMO_ACCESS_KEY ||
+    !process.env.MOMO_SECRET_KEY ||
+    !process.env.MOMO_REDIRECT_URL ||
+    !process.env.MOMO_IPN_URL) 
+{
+    console.log("❌ MoMo config missing! Required variables:");
+    console.log("   - MOMO_PARTNER_CODE");
+    console.log("   - MOMO_ACCESS_KEY");
+    console.log("   - MOMO_SECRET_KEY");
+    console.log("   - MOMO_REDIRECT_URL");
+    console.log("   - MOMO_IPN_URL");
+}
+
+/* =============================================
+   POST: CREATE MOMO PAYMENT REQUEST
+============================================= */
 router.post('/payment', async (req, res) => {
     try {
         const { amount, orderInfo } = req.body;
 
-        // Thông số MoMo test
-        const partnerCode = "MOMO";
-        const accessKey = "F8BBA842ECF85";
-        const secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
-        const requestId = partnerCode + new Date().getTime();
+        if (!amount || !orderInfo) {
+            return res.status(400).json({ message: "Missing amount or orderInfo" });
+        }
+
+        // Lấy thông tin từ .env
+        const partnerCode = process.env.MOMO_PARTNER_CODE;
+        const accessKey = process.env.MOMO_ACCESS_KEY;
+        const secretKey = process.env.MOMO_SECRET_KEY;
+
+        const redirectUrl = process.env.MOMO_REDIRECT_URL;
+        const ipnUrl = process.env.MOMO_IPN_URL;
+
+        const requestId = `${partnerCode}${Date.now()}`;
         const orderId = requestId;
-        const redirectUrl = "https://momo.vn/return";
-        const ipnUrl = "https://callback.url/notify";
         const requestType = "captureWallet";
         const extraData = "";
 
-        // Tạo signature
-        const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${partnerCode}&redirectUrl=${redirectUrl}&requestId=${requestId}&requestType=${requestType}`;
-        const signature = crypto.createHmac('sha256', secretKey)
-                                .update(rawSignature)
-                                .digest('hex');
+        // Tạo signature theo MoMo
+        const rawSignature =
+            `accessKey=${accessKey}` +
+            `&amount=${amount}` +
+            `&extraData=${extraData}` +
+            `&ipnUrl=${ipnUrl}` +
+            `&orderId=${orderId}` +
+            `&orderInfo=${orderInfo}` +
+            `&partnerCode=${partnerCode}` +
+            `&redirectUrl=${redirectUrl}` +
+            `&requestId=${requestId}` +
+            `&requestType=${requestType}`;
 
-        // Body gửi MoMo
+        const signature = crypto
+            .createHmac('sha256', secretKey)
+            .update(rawSignature)
+            .digest('hex');
+
+        // Body gửi lên MoMo
         const requestBody = JSON.stringify({
             partnerCode,
             accessKey,
@@ -37,11 +76,10 @@ router.post('/payment', async (req, res) => {
             extraData,
             requestType,
             signature,
-            lang: 'en'
+            lang: 'vi'
         });
 
-        // Gửi request tới MoMo
-        const https = require('https');
+        // Gửi request đến MoMo
         const options = {
             hostname: 'test-payment.momo.vn',
             port: 443,
@@ -53,24 +91,36 @@ router.post('/payment', async (req, res) => {
             }
         };
 
-        const reqMomo = https.request(options, response => {
+        const momoReq = https.request(options, momoRes => {
             let data = '';
-            response.on('data', chunk => { data += chunk; });
-            response.on('end', () => {
-                res.json(JSON.parse(data)); // trả JSON MoMo về client
+
+            momoRes.on('data', chunk => (data += chunk));
+            momoRes.on('end', () => {
+                try {
+                    const json = JSON.parse(data);
+                    return res.json(json);
+                } catch (err) {
+                    return res.status(500).json({
+                        message: "Invalid JSON returned from MoMo",
+                        rawData: data
+                    });
+                }
             });
         });
 
-        reqMomo.on('error', (e) => {
-            console.error(e);
-            res.status(500).json({ message: 'MoMo request failed', error: e.message });
+        momoReq.on('error', e => {
+            console.error("❌ MoMo request error:", e);
+            res.status(500).json({
+                message: 'MoMo request failed',
+                error: e.message
+            });
         });
 
-        reqMomo.write(requestBody);
-        reqMomo.end();
+        momoReq.write(requestBody);
+        momoReq.end();
 
     } catch (error) {
-        console.error(error);
+        console.error("❌ MoMo server error:", error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });

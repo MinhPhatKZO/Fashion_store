@@ -56,7 +56,6 @@ const Header: React.FC = () => {
     localStorage.clear();
     setUserName(null);
     setItemCount(0);
-<<<<<<< HEAD
     navigate("/login");
   };
 

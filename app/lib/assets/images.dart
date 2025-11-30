@@ -4,7 +4,7 @@ class AppImages {
 
   // --- Product images ---
   static String getProductImage(String productId, {String? fallback}) {
-    final path = 'assets/images/products/$productId.png';
+    final path = 'assets/images/products/$productId.jpg';
     return _getPath(path, fallback);
   }
 
