@@ -31,10 +31,14 @@ class Product {
   /// Lấy ảnh đầu tiên (primary image)
   String get displayImage {
     if (images.isEmpty) {
-      // Fallback về local assets
-      return AppImages.getProductImage(id, fallback: AppImages.placeholder);
+      final fallback = AppImages.getProductImage(id, fallback: AppImages.placeholder);
+      print('🖼️ Product $name: No images, using fallback: $fallback');
+      return fallback;
     }
-    return _buildImageUrl(images.first);
+    
+    final result = _buildImageUrl(images.first);
+    print('🖼️ Product $name: ${images.first} → $result');
+    return result;
   }
 
   /// Lấy tất cả ảnh đã được build URL
@@ -76,10 +80,20 @@ class Product {
       return AppImages.placeholder;
     }
 
-    // Nếu đã là URL đầy đủ
+    // Nếu đã là URL đầy đủ (http/https)
     if (path.startsWith('http')) return path;
 
-    // Build URL từ server
+    // ✅ Xử lý asset path - BỎ HẾT PREFIX "assets/"
+    if (path.contains('/products/') || path.startsWith('products/')) {
+      // Tìm vị trí của "products/"
+      final productsIndex = path.indexOf('products/');
+      if (productsIndex != -1) {
+        // Cắt từ "products/" trở đi → "products/xxx.jpg"
+        return path.substring(productsIndex);
+      }
+    }
+
+    // Build URL từ server (cho các path từ API như "/uploads/...")
     final base = kIsWeb ? 'http://localhost:5000' : 'http://10.0.2.2:5000';
     return path.startsWith('/') ? '$base$path' : '$base/$path';
   }
@@ -89,7 +103,6 @@ class Product {
     if (value == null) return '';
     if (value is String) return value;
     if (value is Map) {
-      // MongoDB format: {$oid: "..."}
       return value['\$oid']?.toString() ?? '';
     }
     return value.toString();
@@ -97,32 +110,41 @@ class Product {
 
   /// Parse từ JSON
   factory Product.fromJson(Map<String, dynamic> json) {
-    // Xử lý images array
     List<String> imagesList = [];
 
     if (json['images'] != null) {
       if (json['images'] is List) {
         imagesList = (json['images'] as List)
-            .map((e) => e is String ? e : (e['url'] ?? '').toString())
+            .map((e) {
+              String url = '';
+              
+              if (e is Map && e['url'] != null) {
+                url = e['url'].toString();
+              } else if (e is String) {
+                url = e;
+              }
+
+              return url;
+            })
             .where((e) => e.isNotEmpty)
             .toList();
       } else if (json['images'] is String && json['images'].isNotEmpty) {
-        imagesList = [json['images']];
+        imagesList = [json['images'] as String];
       }
     }
 
-    // Thêm primaryImage nếu có
     if (json['primaryImage'] != null && json['primaryImage'] != '') {
-      if (!imagesList.contains(json['primaryImage'])) {
-        imagesList.insert(0, json['primaryImage']);
+      final primary = json['primaryImage'] as String;
+      if (!imagesList.contains(primary)) {
+        imagesList.insert(0, primary);
       }
     }
 
     return Product(
       id: _extractId(json['_id']),
       name: json['name']?.toString() ?? '',
-      categoryId: _extractId(json['categoryId']),
-      brandId: _extractId(json['brandId']),
+      categoryId: _extractId(json['categoryId']) ?? '',
+      brandId: _extractId(json['brandId']) ?? '',
       price: _parseDouble(json['price']),
       originalPrice: json['originalPrice'] != null
           ? _parseDouble(json['originalPrice'])
@@ -135,7 +157,6 @@ class Product {
     );
   }
 
-  /// Helper: Parse double safely
   static double _parseDouble(dynamic value) {
     if (value == null) return 0.0;
     if (value is double) return value;
@@ -144,7 +165,6 @@ class Product {
     return 0.0;
   }
 
-  /// Helper: Parse int safely
   static int _parseInt(dynamic value) {
     if (value == null) return 0;
     if (value is int) return value;
@@ -153,7 +173,6 @@ class Product {
     return 0;
   }
 
-  /// Convert to JSON
   Map<String, dynamic> toJson() {
     return {
       '_id': id,
@@ -170,7 +189,6 @@ class Product {
     };
   }
 
-  /// Copy with
   Product copyWith({
     String? id,
     String? name,
