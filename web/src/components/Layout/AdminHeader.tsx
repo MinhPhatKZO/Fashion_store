@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, LogOut } from 'lucide-react';
+import { User, LogOut } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../store';
 import { logout } from '../../store/slices/authSlice';
@@ -9,22 +9,6 @@ const AdminHeader: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
-  const [itemCount, setItemCount] = useState<number>(0);
-
-  useEffect(() => {
-    const storedCart = localStorage.getItem('localCart');
-    if (storedCart) {
-      try {
-        const cart = JSON.parse(storedCart);
-        const totalItems = cart.items
-          ? cart.items.reduce((sum: number, item: any) => sum + item.quantity, 0)
-          : 0;
-        setItemCount(totalItems);
-      } catch {
-        setItemCount(0);
-      }
-    }
-  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -32,7 +16,6 @@ const AdminHeader: React.FC = () => {
     localStorage.removeItem('userName');
     localStorage.removeItem('userRole');
     dispatch(logout());
-    localStorage.removeItem('localCart');
     navigate(0);
   };
 

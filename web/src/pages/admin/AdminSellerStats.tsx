@@ -17,8 +17,6 @@ interface SellerRevenue {
   sellerEmail: string;
   totalRevenue: number;
   totalOrders: number;
-  year?: number;
-  month?: number;
 }
 
 const AdminSellerStats: React.FC = () => {
@@ -28,31 +26,32 @@ const AdminSellerStats: React.FC = () => {
   const [month, setMonth] = useState<string>("");
 
   const fetchRevenue = async () => {
-  setLoading(true);
-  try {
-    let startDate: string | undefined;
-    let endDate: string | undefined;
+    setLoading(true);
+    try {
+      let startDate: string | undefined;
+      let endDate: string | undefined;
 
-    if (year && month) {
-      startDate = new Date(Number(year), Number(month) - 1, 1).toISOString();
-      endDate = new Date(Number(year), Number(month), 0, 23, 59, 59).toISOString();
-    } else if (year) {
-      startDate = new Date(Number(year), 0, 1).toISOString();
-      endDate = new Date(Number(year), 11, 31, 23, 59, 59).toISOString();
+      if (year && month) {
+        startDate = new Date(Number(year), Number(month) - 1, 1).toISOString();
+        endDate = new Date(Number(year), Number(month), 0, 23, 59, 59).toISOString();
+      } else if (year) {
+        startDate = new Date(Number(year), 0, 1).toISOString();
+        endDate = new Date(Number(year), 11, 31, 23, 59, 59).toISOString();
+      }
+
+      const res = await adminAPI.getSellerRevenue({
+        fromDate: startDate,
+        toDate: endDate,
+      });
+
+      setRevenues(res.data.revenueData || []);
+    } catch (error) {
+      console.error("Fetch seller revenue error:", error);
+      setRevenues([]);
+    } finally {
+      setLoading(false);
     }
-
-    const res = await adminAPI.getSellerRevenue({ startDate, endDate });
-
-    // Chỉ lấy res.data.data vì đã đúng type
-    setRevenues(res.data.data || []);
-  } catch (error) {
-    console.error("Fetch seller revenue error:", error);
-    setRevenues([]);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   useEffect(() => {
     fetchRevenue();

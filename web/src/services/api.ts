@@ -47,7 +47,7 @@ export const authAPI = {
     api.post<ApiResponse<{ token: string; user: User }>>('/auth/login', data),
   
   getMe: () =>
-    api.get<ApiResponse<{ user: User }>>('/auth/me'),
+    api.get<ApiResponse<{ user: User }>>('/auth/profile'),
   
   updateProfile: (data: Partial<User>) =>
     api.put<ApiResponse<{ user: User }>>('/auth/profile', data),
@@ -255,31 +255,19 @@ export const adminAPI = {
   deletePromotion: (id: string) =>
     api.delete<{ message: string }>(`/admin/promotions/${id}`),
 
-   //Thống kê tổng quan dashboard
-  getStatistics: () => api.get<ApiResponse<{
-    totalUsers: number;
-    totalSellers: number;
-    totalProducts: number;
-    totalOrders: number;
-    totalRevenue: number;
-  }>>("/admin/statistics"),
-
-  //Thống kê doanh thu seller
+  // Seller Revenue
   getSellerRevenue: (params?: {
-    startDate?: string;
-    endDate?: string;
-    groupBy?: "month" | "year";
-  }) => api.get<ApiResponse<Array<{
-    sellerId: string;
-    sellerName: string;
-    sellerEmail: string;
-    year?: number;
-    month?: number;
-    totalRevenue: number;
-    totalOrders: number;
-  }>>>("/admin/seller-revenue", { params }),
+    seller?: string;
+    fromDate?: string;
+    toDate?: string;
+  }) =>
+    api.get<{ revenueData: Array<{
+      sellerId: string;
+      sellerName: string;
+      sellerEmail: string;
+      totalRevenue: number;
+      totalOrders: number;
+    }> }>('/admin/seller-revenue', { params }),
 };
-
-
 
 export default api;

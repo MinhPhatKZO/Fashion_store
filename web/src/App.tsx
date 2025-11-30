@@ -17,6 +17,7 @@ import UserLayout from "./components/Layout/UserLayout";
 // Pages
 import Home from "./pages/Home";
 import Products from "./pages/Products";
+import Promotions from "./pages/Promotions";
 import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
 import Login from "./pages/Login";
@@ -107,6 +108,7 @@ function AppContent() {
           <Route path="products" element={<Products />} />
           <Route path="products/:id" element={<ProductDetail />} />
           <Route path="cart" element={<Cart />} />
+          <Route path="promotions" element={<Promotions />} />
 
           {/* Payment */}
           <Route path="checkout/cod" element={<CodCheckout />} />

@@ -78,10 +78,7 @@ const Header: React.FC = () => {
           <Link to="/products" className="text-gray-700 hover:text-indigo-600 font-medium text-lg">
             Sản phẩm
           </Link>
-          <Link to="/products?isFeatured=true" className="text-gray-700 hover:text-indigo-600 font-medium text-lg">
-            Nổi bật
-          </Link>
-          <Link to="/products?isOnSale=true" className="text-gray-700 hover:text-indigo-600 font-medium text-lg">
+          <Link to="/promotions" className="text-gray-700 hover:text-indigo-600 font-medium text-lg">
             Khuyến mãi
           </Link>
         </nav>
@@ -104,10 +101,13 @@ const Header: React.FC = () => {
           {/* Nếu đã đăng nhập */}
           {userName ? (
             <div className="flex items-center gap-4">
-              <span className="text-gray-700 font-semibold flex items-center gap-2 text-lg">
+              <Link
+                to="/profile"
+                className="text-gray-700 font-semibold flex items-center gap-2 text-lg hover:text-indigo-600 transition"
+              >
                 <User className="h-6 w-6 text-indigo-600" />
                 {userName}
-              </span>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-2 text-sm font-semibold text-red-600 hover:text-red-700 transition"

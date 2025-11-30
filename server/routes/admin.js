@@ -183,71 +183,58 @@ router.delete('/promotions/:id', auth, adminAuth, async (req, res) => {
   }
 });
 
-// Route: GET /admin/seller-revenue
+/* ==============================
+   🧾 Seller Revenue Statistics (with Date Filter)
+================================ */
 router.get('/seller-revenue', auth, adminAuth, async (req, res) => {
   try {
-    const { startDate, endDate, groupBy } = req.query;
-    // groupBy = 'month' | 'year' | undefined
+    const { seller, fromDate, toDate } = req.query;
 
-    // Build filter đơn hàng hoàn thành
-    let matchFilter = { status: 'completed' };
-    if (startDate || endDate) {
+    // Build filter
+    const matchFilter = { status: 'delivered' };
+
+    if (seller) matchFilter.seller = mongoose.Types.ObjectId(seller);
+
+    if (fromDate || toDate) {
       matchFilter.createdAt = {};
-      if (startDate) matchFilter.createdAt.$gte = new Date(startDate);
-      if (endDate) matchFilter.createdAt.$lte = new Date(endDate);
+      if (fromDate) matchFilter.createdAt.$gte = new Date(fromDate);
+      if (toDate) matchFilter.createdAt.$lte = new Date(toDate);
     }
 
-    // Stage group tùy theo yêu cầu
-    let groupStage = {
-      _id: "$seller",
-      totalRevenue: { $sum: "$totalPrice" },
-      totalOrders: { $sum: 1 }
-    };
-
-    if (groupBy === 'month') {
-      groupStage._id = {
-        seller: "$seller",
-        year: { $year: "$createdAt" },
-        month: { $month: "$createdAt" }
-      };
-    } else if (groupBy === 'year') {
-      groupStage._id = {
-        seller: "$seller",
-        year: { $year: "$createdAt" }
-      };
-    }
-
-    const revenueBySeller = await Order.aggregate([
+    const revenueData = await Order.aggregate([
       { $match: matchFilter },
-      { $group: groupStage },
+      {
+        $group: {
+          _id: '$seller',
+          totalRevenue: { $sum: '$totalPrice' },
+          totalOrders: { $sum: 1 }
+        }
+      },
       {
         $lookup: {
-          from: "users",
-          localField: groupBy ? "_id.seller" : "_id",
-          foreignField: "_id",
-          as: "sellerInfo"
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'sellerInfo'
         }
       },
-      { $unwind: "$sellerInfo" },
+      { $unwind: '$sellerInfo' },
       {
         $project: {
-          sellerId: groupBy ? "$_id.seller" : "$_id",
-          sellerName: "$sellerInfo.name",
-          sellerEmail: "$sellerInfo.email",
-          year: groupBy ? "$_id.year" : undefined,
-          month: groupBy ? "$_id.month" : undefined,
+          sellerId: '$_id',
+          sellerName: '$sellerInfo.name',
+          sellerEmail: '$sellerInfo.email',
           totalRevenue: 1,
-          totalOrders: 1
+          totalOrders: 1,
+          _id: 0
         }
-      },
-      { $sort: { totalRevenue: -1 } }
+      }
     ]);
 
-    res.json(revenueBySeller);
-
+    res.json({ revenueData });
   } catch (error) {
-    console.error("Get seller revenue error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('Seller revenue error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
