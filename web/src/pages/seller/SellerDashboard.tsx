@@ -35,16 +35,11 @@ interface Product {
     stock: number;
 }
 
-// ===========================================
-// ⭐ UTILS
-// ===========================================
 const formatCurrency = (amount: number) => {
     return amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
 };
 
-// ===========================================
-// ⭐ STATUS CARD COMPONENT (Đã sửa lỗi TypeScript)
-// ===========================================
+
 const StatusCard: React.FC<{ icon: React.ElementType; title: string; value: string | number; color: string }> = ({ 
     icon: IconComponent, 
     title, 
@@ -63,9 +58,6 @@ const StatusCard: React.FC<{ icon: React.ElementType; title: string; value: stri
 );
 
 
-// ===========================================
-// ⭐ MAIN COMPONENT
-// ===========================================
 export default function SellerDashboard() {
     const [userName, setUserName] = useState<string | null>(null);
     const [orders, setOrders] = useState<Order[]>([]);
@@ -102,7 +94,6 @@ export default function SellerDashboard() {
                 setMonthRevenue(data.monthRevenue || []);
             } catch (err) {
                 console.error("Error fetching seller dashboard data:", err);
-                // alert("Lỗi tải dữ liệu. Vui lòng đăng nhập lại."); // Comment để tránh alert liên tục
             } finally {
                 setLoading(false);
             }
@@ -111,7 +102,6 @@ export default function SellerDashboard() {
         fetchData();
     }, []);
 
-    // ================== CHART DATA ==================
     const weekDays = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
     const monthLabels = Array.from({ length: 12 }, (_, i) => `Tháng ${i + 1}`);
 
@@ -150,8 +140,7 @@ export default function SellerDashboard() {
             },
         ],
     };
-    
-    // ================== HELPER FUNCTIONS ==================
+
     const getStatusBadge = (status: string) => {
         switch (status.toLowerCase()) {
             case "completed":
@@ -175,20 +164,15 @@ export default function SellerDashboard() {
             </div>
         );
     }
-
-
-    // ================== RENDER ==================
     return (
         <div className="min-h-screen bg-gray-100 p-6 sm:p-8 lg:p-10">
             
             <main className="flex-1">
-                {/* Header chào mừng */}
                 <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 mb-8">
-                    <h1 className="text-3xl font-extrabold text-gray-900">👋 Xin chào, {userName || "Quản trị viên"}!</h1>
+                    <h1 className="text-3xl font-extrabold text-gray-900"> Xin chào, {userName || "Quản trị viên"}!</h1>
                     <p className="text-gray-500 mt-1">Tổng quan hiệu suất bán hàng của bạn.</p>
                 </div>
 
-                {/* ================== CARDS DOANH THU ================== */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <StatusCard 
                         icon={DollarSign} 
@@ -222,7 +206,6 @@ export default function SellerDashboard() {
                     />
                 </div>
 
-                {/* ================== BIỂU ĐỒ ================== */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                     <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
                         <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -238,7 +221,6 @@ export default function SellerDashboard() {
                     </div>
                 </div>
 
-                {/* ================== ĐƠN HÀNG GẦN ĐÂY ================== */}
                 <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
                     <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
                         <ShoppingBag className="w-5 h-5 text-yellow-600" /> 10 Đơn hàng gần đây

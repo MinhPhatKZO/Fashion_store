@@ -13,9 +13,6 @@ const api = axios.create({
     },
 });
 
-// ===========================================
-// ⭐ INTERFACES
-// ===========================================
 type ImageItem = {
     url: string;
     isPrimary?: boolean;
@@ -33,9 +30,7 @@ type Product = {
     createdAt?: string;
 };
 
-// ===========================================
-// ⭐ LOADER COMPONENT
-// ===========================================
+
 const Loader = () => (
     <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-inner border border-gray-100">
         <Loader2 className="animate-spin h-10 w-10 text-gray-500 mb-4" />
@@ -43,9 +38,6 @@ const Loader = () => (
     </div>
 );
 
-// ===========================================
-// ⭐ PRODUCT CARD COMPONENT (Đã cập nhật logic trạng thái và nút xóa)
-// ===========================================
 const ProductCard: React.FC<{ product: Product; onDelete: (id: string) => Promise<void> }> = ({
     product,
     onDelete,
@@ -61,11 +53,9 @@ const ProductCard: React.FC<{ product: Product; onDelete: (id: string) => Promis
         e.currentTarget.src = 'https://via.placeholder.com/350x450?text=Image+Not+Found';
     };
 
-    // ⭐ LOGIC HIỂN THỊ TRẠNG THÁI MỚI ⭐
     const isOutOfStock = (product.stock ?? 0) === 0;
     const isDraft = !product.isActive;
     
-    // Xác định Badge Text và Style
     const getStatusBadge = () => {
         if (isOutOfStock) {
             return {
@@ -90,7 +80,7 @@ const ProductCard: React.FC<{ product: Product; onDelete: (id: string) => Promis
     const handleDeleteClick = async () => {
         if (isDeleting) return;
 
-        if (!window.confirm(`🚨 Cảnh báo! Bạn chắc chắn muốn xoá sản phẩm "${product.name}" vĩnh viễn?`)) {
+        if (!window.confirm(`Cảnh báo! Bạn chắc chắn muốn xoá sản phẩm "${product.name}" vĩnh viễn?`)) {
             return;
         }
 
@@ -101,14 +91,12 @@ const ProductCard: React.FC<{ product: Product; onDelete: (id: string) => Promis
         } catch (error) {
             setIsDeleting(false); 
             console.error("Lỗi khi xoá sản phẩm tại Card:", error);
-            // Lỗi đã được xử lý alert ở component cha
         }
     };
 
     return (
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 flex flex-col transition-all duration-300 transform hover:shadow-xl hover:scale-[1.01] overflow-hidden">
             
-            {/* Ảnh sản phẩm */}
             <div className="relative w-full h-48 overflow-hidden bg-gray-50">
                 <img 
                     src={img} 
@@ -116,7 +104,6 @@ const ProductCard: React.FC<{ product: Product; onDelete: (id: string) => Promis
                     className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" 
                     onError={handleImageError}
                 />
-                {/* Badge trạng thái ĐÃ CẬP NHẬT LOGIC */}
                 <span 
                     className={`absolute top-2 right-2 px-3 py-1 text-xs font-semibold rounded-full shadow-md ${status.style}`}
                 >
@@ -124,13 +111,11 @@ const ProductCard: React.FC<{ product: Product; onDelete: (id: string) => Promis
                 </span>
             </div>
 
-            {/* Chi tiết sản phẩm */}
             <div className="p-4 flex flex-col flex-grow">
                 <h3 className="text-xl font-bold text-gray-900 mb-2 truncate" title={product.name}>
                     {product.name || "Tên sản phẩm trống"}
                 </h3>
-                
-                {/* Thông tin giá và kho */}
+
                 <div className="space-y-2 mb-4">
                     <div className="flex items-center gap-2 text-gray-700 font-semibold text-lg">
                         <DollarSign className="w-5 h-5 text-green-600" />
@@ -142,7 +127,6 @@ const ProductCard: React.FC<{ product: Product; onDelete: (id: string) => Promis
                     </div>
                 </div>
 
-                {/* Hành động */}
                 <div className="flex justify-between items-center mt-auto border-t pt-4">
                     <Link
                         to={`/seller/products/edit/${product._id}`}
@@ -150,8 +134,6 @@ const ProductCard: React.FC<{ product: Product; onDelete: (id: string) => Promis
                     >
                         <Edit className="w-4 h-4" /> Chỉnh sửa
                     </Link>
-                    
-                    {/* ⭐ Nút Xóa đã được chỉnh sửa ⭐ */}
                     <button
                         onClick={handleDeleteClick}
                         disabled={isDeleting}
@@ -176,10 +158,6 @@ const ProductCard: React.FC<{ product: Product; onDelete: (id: string) => Promis
         </div>
     );
 };
-
-// ===========================================
-// ⭐ MAIN COMPONENT
-// ===========================================
 const SellerProducts: React.FC = () => {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
@@ -199,7 +177,6 @@ const SellerProducts: React.FC = () => {
         }
     };
 
-    // Điều chỉnh hàm handleDelete để ném lỗi khi API thất bại
     const handleDelete = async (id: string) => {
         try {
             await api.delete(`/delete/${id}`);
@@ -218,7 +195,6 @@ const SellerProducts: React.FC = () => {
 
     return (
         <div className="bg-gray-50 min-h-screen p-6 sm:p-8 lg:p-10">
-            {/* Header Dashboard */}
             <div className="bg-white rounded-xl shadow-md p-6 mb-8 border border-gray-100">
                 <div className="flex justify-between items-center">
                     <h1 className="text-3xl font-extrabold text-gray-900">📦 Quản lý Sản phẩm</h1>
@@ -232,7 +208,6 @@ const SellerProducts: React.FC = () => {
             </div>
             
             <div className="p-4">
-                {/* Hiển thị Nội dung chính */}
                 {loading ? (
                     <Loader />
                 ) : products.length === 0 ? (
@@ -250,7 +225,6 @@ const SellerProducts: React.FC = () => {
                 )}
             </div>
 
-            {/* Footer / Debug Info */}
             <div className="mt-10 pt-4 border-t text-center text-sm text-gray-500">
                 <p>Tổng số sản phẩm: {products.length}</p>
                 <p>Route hiện tại: <span className="text-indigo-600 font-semibold">{location.pathname}</span></p>

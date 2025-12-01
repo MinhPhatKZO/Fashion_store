@@ -341,8 +341,6 @@ const SellerEditProduct: React.FC = () => {
                             </form>
                         </div>
 
-                        {/* 2. QUẢN LÝ BIẾN THỂ (VariantManager) */}
-                        {/* Giữ nguyên VariantManager, chỉ bao bọc lại giao diện container */}
                         <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
                              <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
                                 <Box className="w-5 h-5 text-indigo-600" /> Quản lý Biến thể (Variants)
@@ -353,14 +351,12 @@ const SellerEditProduct: React.FC = () => {
                         </div>
                     </div>
                     
-                    {/* Cột 3: Hình ảnh */}
                     <div className="space-y-8">
                         <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 sticky top-4">
                             <h2 className="font-bold text-xl text-gray-800 mb-6 flex items-center gap-2">
                                 <Upload className="w-5 h-5 text-pink-600" /> Hình ảnh sản phẩm
                             </h2>
 
-                            {/* HIỂN THỊ ẢNH HIỆN TẠI */}
                             <div className="space-y-4 mb-6">
                                 <p className="font-medium text-gray-700">Ảnh hiện tại ({product.images.length})</p>
                                 <div className="flex flex-wrap gap-3">
@@ -386,7 +382,6 @@ const SellerEditProduct: React.FC = () => {
                                 </div>
                             </div>
                             
-                            {/* KHU VỰC UPLOAD ẢNH MỚI */}
                             <div className="pt-4 border-t border-gray-200">
                                 <p className="font-medium text-gray-700 mb-3">Thêm ảnh mới</p>
                                 
