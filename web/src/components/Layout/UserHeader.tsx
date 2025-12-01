@@ -2,13 +2,25 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ShoppingCart, User, LogOut } from "lucide-react";
 
+// Định nghĩa kiểu cho item giỏ hàng
+interface CartItem {
+  id: string;
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+interface CartStorage {
+  items?: CartItem[];
+}
+
 const Header: React.FC = () => {
   const navigate = useNavigate();
 
   const [userName, setUserName] = useState<string | null>(null);
   const [itemCount, setItemCount] = useState<number>(0);
 
-  // ✅ Lấy user & giỏ hàng từ localStorage
+  // Lấy user & giỏ hàng từ localStorage
   useEffect(() => {
     const name = localStorage.getItem("userName");
     setUserName(name);
@@ -16,9 +28,9 @@ const Header: React.FC = () => {
     const storedCart = localStorage.getItem("localCart");
     if (storedCart) {
       try {
-        const cart = JSON.parse(storedCart);
+        const cart: CartStorage = JSON.parse(storedCart);
         const totalItems = cart.items
-          ? cart.items.reduce((sum: number, item: any) => sum + item.quantity, 0)
+          ? cart.items.reduce((sum: number, item: CartItem) => sum + item.quantity, 0)
           : 0;
         setItemCount(totalItems);
       } catch {
@@ -27,15 +39,15 @@ const Header: React.FC = () => {
     }
   }, []);
 
-  // ✅ Lắng nghe thay đổi localStorage
+  // Lắng nghe thay đổi localStorage
   useEffect(() => {
     const handleStorageChange = () => {
       const storedCart = localStorage.getItem("localCart");
       if (storedCart) {
         try {
-          const cart = JSON.parse(storedCart);
+          const cart: CartStorage = JSON.parse(storedCart);
           const totalItems = cart.items
-            ? cart.items.reduce((sum: number, item: any) => sum + item.quantity, 0)
+            ? cart.items.reduce((sum: number, item: CartItem) => sum + item.quantity, 0)
             : 0;
           setItemCount(totalItems);
         } catch {
@@ -78,7 +90,10 @@ const Header: React.FC = () => {
           <Link to="/products" className="text-gray-700 hover:text-indigo-600 font-medium text-lg">
             Sản phẩm
           </Link>
-          <Link to="/products?isFeatured=true" className="text-gray-700 hover:text-indigo-600 font-medium text-lg">
+          <Link
+            to="/products?isFeatured=true"
+            className="text-gray-700 hover:text-indigo-600 font-medium text-lg"
+          >
             Nổi bật
           </Link>
           <Link to="/orders" className="text-gray-700 hover:text-indigo-600 font-medium text-lg">

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Search, ChevronDown, Filter, Loader2, X, Star, ChevronUp } from 'lucide-react';
+import { useSearchParams } from "react-router-dom";
 
 // Khai báo global interface cho TypeScript
 declare global {
@@ -79,6 +80,8 @@ const Products: React.FC = () => {
   const currentMinPrice = queryParams.get('minPrice') || '';
   const currentMaxPrice = queryParams.get('maxPrice') || '';
   const currentPage = parseInt(queryParams.get('page') || '1', 10);
+  const [searchParams] = useSearchParams();
+  const idsParam = searchParams.get("ids");
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,6 +127,9 @@ const Products: React.FC = () => {
         if (['category', 'brand', 'minPrice', 'maxPrice', 'search', 'sort', 'page'].includes(key) && value)
           params[key] = value;
       });
+      if (idsParam) {          
+      params.ids = idsParam; 
+    }
       params.page = page.toString();
 
       const response = await axios.get(`${API_URL}/api/products`, { params });
@@ -318,7 +324,11 @@ const Products: React.FC = () => {
         {/* --- DANH SÁCH SẢN PHẨM (GIỮ NGUYÊN) --- */}
         <div className="w-full md:w-3/4">
           <h1 className="text-4xl lg:text-5xl font-extrabold mb-3 text-gray-900 tracking-tight">
-            {currentSearchTerm ? `Kết quả cho: "${currentSearchTerm}"` : 'Thế giới Sản Phẩm'}
+            {currentSearchTerm
+              ? `Kết quả cho: "${currentSearchTerm}"`
+              : idsParam
+              ? 'Sản phẩm được gợi ý từ Trợ lý AI'
+              : 'Thế giới Sản Phẩm'}
           </h1>
           <p className="text-gray-600 mb-8 text-lg">Tìm thấy <strong>{pagination.total.toLocaleString('vi-VN')}</strong> sản phẩm</p>
 

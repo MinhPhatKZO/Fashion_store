@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import ProductCard from "../components/ProductCard";
 import Categories, { Category } from "../components/Categories";
+import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import Slider from "react-slick";
 
 interface Image {
   url: string;
@@ -46,36 +46,45 @@ const Home: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
 
+  // Lấy ảnh sản phẩm với fallback
+  const getProductImage = (product: Product) => {
+    if (product.images && product.images.length > 0) {
+      if (typeof product.images[0] === "string") return product.images[0];
+      return (product.images[0] as Image).url;
+    }
+    if (product.image) return product.image;
+    return "/assets/no-image.png"; // fallback local
+  };
+
   useEffect(() => {
     const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+      setLoading(true);
+      setError(null);
 
-        const featuredRes = await axios.get(
-          "http://localhost:5000/api/products/featured"
-        );
+      try {
+        // Featured
+        const featuredRes = await axios.get("http://localhost:5000/api/products/featured");
         const featured = Array.isArray(featuredRes.data)
           ? featuredRes.data
           : featuredRes.data.products || [];
         setFeaturedProducts(featured);
 
+        // On Sale
         try {
-          const saleRes = await axios.get(
-            "http://localhost:5000/api/products/on-sale"
-          );
+          const saleRes = await axios.get("http://localhost:5000/api/products/on-sale");
           const onSale = Array.isArray(saleRes.data)
             ? saleRes.data
             : saleRes.data.products || [];
           setOnSaleProducts(onSale);
-        } catch {
+        } catch (err) {
+          // fallback: lấy sản phẩm giảm giá từ featured
           const saleProducts = featured.filter((p: Product) => p.isOnSale);
           setOnSaleProducts(saleProducts);
         }
 
-        setLoading(false);
-      } catch (error: any) {
-        setError(error.response?.data?.message || "Không thể tải sản phẩm");
+      } catch (err: any) {
+        setError(err.response?.data?.message || "Không thể tải sản phẩm");
+      } finally {
         setLoading(false);
       }
     };
@@ -131,33 +140,34 @@ const Home: React.FC = () => {
         >
           Khám phá ngay
         </a>
-         <div className="max-w-5xl mx-auto mt-12">
-    <Slider
-      autoplay
-      autoplaySpeed={3000}
-      infinite
-      dots
-      arrows={false}
-      speed={1000}
-      cssEase="ease-in-out"
-      pauseOnHover={false}
-    >
-      {[
-        "https://images.unsplash.com/photo-1521335629791-ce4aec67dd47",
-        "https://images.unsplash.com/photo-1521334884684-d80222895322",
-        "https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb",
-        "https://images.unsplash.com/photo-1520975922320-37a0c390bca4"
-      ].map((img, index) => (
-        <div key={index}>
-          <img
-            src={img + "?auto=format&fit=crop&w=1600&q=80"}
-            alt={`Fashion banner ${index + 1}`}
-            className="w-full h-80 object-cover rounded-2xl shadow-lg transition-transform duration-500 hover:scale-[1.02]"
-          />
+
+        <div className="max-w-5xl mx-auto mt-12">
+          <Slider
+            autoplay
+            autoplaySpeed={3000}
+            infinite
+            dots
+            arrows={false}
+            speed={1000}
+            cssEase="ease-in-out"
+            pauseOnHover={false}
+          >
+            {[
+              "https://images.unsplash.com/photo-1521335629791-ce4aec67dd47",
+              "https://images.unsplash.com/photo-1521334884684-d80222895322",
+              "https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb",
+              "https://images.unsplash.com/photo-1520975922320-37a0c390bca4"
+            ].map((img, index) => (
+              <div key={index}>
+                <img
+                  src={img + "?auto=format&fit=crop&w=1600&q=80"}
+                  alt={`Fashion banner ${index + 1}`}
+                  className="w-full h-80 object-cover rounded-2xl shadow-lg transition-transform duration-500 hover:scale-[1.02]"
+                />
+              </div>
+            ))}
+          </Slider>
         </div>
-      ))}
-    </Slider>
-  </div>
       </section>
 
       {/* Categories Section */}
@@ -167,7 +177,6 @@ const Home: React.FC = () => {
             <h2 className="text-3xl font-bold text-gray-800 mb-2">Danh mục sản phẩm</h2>
             <p className="text-gray-600">Tìm kiếm theo danh mục yêu thích</p>
           </div>
-
           <Categories onSelect={setSelectedCategory} />
         </div>
       </section>
@@ -195,7 +204,10 @@ const Home: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {filteredProducts.slice(0, 8).map((product) => (
-                <ProductCard key={product._id} product={product} />
+                <ProductCard
+                  key={product._id}
+                  product={{ ...product, image: getProductImage(product) }}
+                />
               ))}
             </div>
           )}
@@ -224,7 +236,10 @@ const Home: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {onSaleProducts.slice(0, 8).map((product) => (
-                <ProductCard key={product._id} product={product} />
+                <ProductCard
+                  key={product._id}
+                  product={{ ...product, image: getProductImage(product) }}
+                />
               ))}
             </div>
 
@@ -246,4 +261,3 @@ const Home: React.FC = () => {
 };
 
 export default Home;
-

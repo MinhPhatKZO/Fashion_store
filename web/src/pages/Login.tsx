@@ -1,8 +1,6 @@
 import React, { useState, ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useDispatch } from "react-redux";
-import { setUser, setToken } from "../store/slices/authSlice";
 
 interface Message {
   text: string;
@@ -16,7 +14,6 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
-  const dispatch = useDispatch();
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -38,44 +35,31 @@ export default function Login() {
       if (res.ok) {
         const { token, user } = data;
 
-        // ✅ Lưu vào localStorage
         localStorage.setItem("token", token);
         localStorage.setItem("userId", user._id);
         localStorage.setItem("userName", user.name);
-        localStorage.setItem("userRole", user.role); // thêm role
+        localStorage.setItem("userRole", user.role);
 
-        // ✅ Cập nhật Redux state
-        dispatch(setUser(user));
-        dispatch(setToken(token));
-
-        // ✅ Tạo giỏ hàng nếu chưa có
         if (!localStorage.getItem("localCart")) {
           localStorage.setItem("localCart", JSON.stringify({ items: [], priceTotal: 0 }));
         }
 
         setMessage({ text: "Đăng nhập thành công!", type: "success" });
 
-        // ⏳ Điều hướng ngay, không reload
         setTimeout(() => {
-          // Nếu là admin, điều hướng vào admin dashboard
           if (user.role === "admin") navigate("/admin");
           else if (user.role === "seller") navigate("/seller");
-          else navigate("/"); // user bình thường
+          else navigate("/");
         }, 500);
       } else {
         setMessage({
-          text:
-            data.message ||
-            "Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu.",
+          text: data.message || "Đăng nhập thất bại. Kiểm tra email/mật khẩu.",
           type: "error",
         });
       }
     } catch (error) {
       console.error("Login error:", error);
-      setMessage({
-        text: "Không thể kết nối đến máy chủ. Vui lòng thử lại sau.",
-        type: "error",
-      });
+      setMessage({ text: "Không thể kết nối đến máy chủ.", type: "error" });
     } finally {
       setIsLoading(false);
     }
@@ -94,9 +78,7 @@ export default function Login() {
         transition={{ type: "spring", stiffness: 100 }}
         className="bg-white w-[400px] p-8 rounded-xl shadow-2xl border border-gray-100"
       >
-        <h2 className="text-3xl text-center text-gray-800 font-extrabold mb-8">
-          Đăng nhập
-        </h2>
+        <h2 className="text-3xl text-center text-gray-800 font-extrabold mb-8">Đăng nhập</h2>
 
         {message && (
           <motion.div
@@ -111,37 +93,33 @@ export default function Login() {
 
         <div className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
               name="email"
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-sky-500 focus:border-sky-500 outline-none transition"
               type="email"
               value={form.email}
+              onChange={handleChange}
               disabled={isLoading}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-sky-500 focus:border-sky-500 outline-none transition"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Mật khẩu
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
             <div className="flex items-center border border-gray-300 rounded-lg focus-within:ring-sky-500 focus-within:border-sky-500 transition">
               <input
                 name="password"
-                onChange={handleChange}
-                className="w-full p-3 bg-transparent outline-none rounded-l-lg"
                 type={showPassword ? "text" : "password"}
                 value={form.password}
+                onChange={handleChange}
                 disabled={isLoading}
+                className="w-full p-3 bg-transparent outline-none rounded-l-lg"
               />
               <button
                 type="button"
-                className="p-3 text-gray-500 hover:text-gray-700 transition rounded-r-lg"
                 onClick={() => setShowPassword(!showPassword)}
                 disabled={isLoading}
+                className="p-3 text-gray-500 hover:text-gray-700 transition rounded-r-lg"
               >
                 {showPassword ? "🙈" : "👁️"}
               </button>
@@ -154,7 +132,7 @@ export default function Login() {
           disabled={isLoading || !form.email || !form.password}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className="w-full mt-8 bg-sky-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-sky-700 transition duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+          className="w-full mt-8 bg-sky-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-sky-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
         >
           {isLoading ? (
             <svg
@@ -163,14 +141,7 @@ export default function Login() {
               fill="none"
               viewBox="0 0 24 24"
             >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path
                 className="opacity-75"
                 fill="currentColor"
