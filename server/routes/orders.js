@@ -390,7 +390,7 @@ message: "Order cancelled successfully",
 order,
 });
 } catch (error) {
-console.error("❌ Cancel order error:", error);
+console.error(" Cancel order error:", error);
 res.status(500).json({ message: "Server error" });
 }
 });
