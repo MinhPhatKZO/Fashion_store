@@ -26,7 +26,9 @@ const AdminDashboard: React.FC = () => {
   const handleRoleChange = async (userId: string, newRole: "user" | "seller") => {
     try {
       await adminAPI.updateUserRole(userId, newRole);
-      setUsers(prev => prev.map(u => u._id === userId ? { ...u, role: newRole } : u));
+      setUsers(prev =>
+        prev.map(u => (u._id === userId ? { ...u, role: newRole } : u))
+      );
     } catch (error) {
       console.error("Update role error:", error);
       alert("Không thể cập nhật role. Vui lòng thử lại.");
@@ -93,9 +95,9 @@ const AdminDashboard: React.FC = () => {
             {users.map((u, index) => (
               <tr key={u._id} className="text-center hover:bg-gray-50">
                 <td className="p-2 border">{index + 1}</td>
-                <td className="p-2 border">{u.name}</td>
-                <td className="p-2 border">{u.email}</td>
-                <td className="p-2 border">{u.addresses[0]?.address || "-"}</td>
+                <td className="p-2 border">{u.name || "-"}</td>
+                <td className="p-2 border">{u.email || "-"}</td>
+                <td className="p-2 border">{u.addresses?.[0]?.address || "-"}</td>
                 <td className="p-2 border">{u.phone || "-"}</td>
                 <td className="p-2 border">
                   <select

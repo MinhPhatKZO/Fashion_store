@@ -9,6 +9,9 @@ import { loadCartFromStorage } from "./store/slices/cartSlice";
 import { CartProvider } from "./context/CartContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+// ✅ Components
+import AIChatBox from "./components/AIChatBox/AIChatbox";
+
 // Layouts
 import AdminLayout from "./components/Layout/AdminLayout";
 import SellerLayout from "./components/Layout/SellerLayout";
@@ -23,12 +26,14 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
+import OrderDetail from "./pages/OrderDetail";
 import Wishlist from "./pages/Wishlist";
 import NotFound from "./pages/NotFound";
 import VNPayCheckout from "./payment/VNPayCheckout";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminPromotion from "./pages/admin/AdminPromotion";
 import AdminSellerStats from "./pages/admin/AdminSellerStats";
+import AdminUserManagement from "./pages/admin/AdminUserManagement";
 
 // Payment
 import CodCheckout from "./payment/CODCheckout";
@@ -81,7 +86,7 @@ function AppContent() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<AdminDashboard />} />
+          <Route index element={<AdminUserManagement />} />
           <Route path="promotion" element={<AdminPromotion />} />
           <Route path="statistics" element={<AdminSellerStats />} />
         </Route>
@@ -123,6 +128,7 @@ function AppContent() {
           {/* User Protected */}
           <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+          <Route path="orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
           <Route path="wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
 
           {/* 404 */}
@@ -139,7 +145,11 @@ function AppContent() {
           }
         />
       </Routes>
+
       <Toaster position="top-right" />
+
+      {/* ✅ AI Chatbox hiển thị trên mọi trang */}
+      <AIChatBox />
     </Router>
   );
 }

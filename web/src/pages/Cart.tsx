@@ -1,23 +1,40 @@
-import React from "react";
+import React, { useEffect } from "react";
 import CartItem from "../components/CartItem";
 import { useCart } from "../context/CartContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
 const Cart: React.FC = () => {
-  const { cart, updateQuantity, removeItem } = useCart();
+  const { cart, updateQuantity, removeItem, addItems } = useCart();
   const navigate = useNavigate();
 
-  // Tong tien
+  // --- Load “repayCart” nếu có ---
+  useEffect(() => {
+    const repayCartJSON = localStorage.getItem("repayCart");
+    if (repayCartJSON) {
+      try {
+        const repayItems = JSON.parse(repayCartJSON);
+        if (Array.isArray(repayItems) && repayItems.length > 0) {
+          addItems(repayItems); // Thêm vào context cart
+        }
+      } catch (err) {
+        console.error("Lỗi khi đọc repayCart:", err);
+      } finally {
+        localStorage.removeItem("repayCart"); // Xóa key sau khi nạp
+      }
+    }
+  }, [addItems]);
+
+  // Tổng tiền
   const total = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
 
-  // Tong so san pham
+  // Tổng số sản phẩm
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Xu ly chuyen huong thanh toan
+  // Xử lý chuyển hướng thanh toán
   const handleCheckoutNavigation = (method: "cod" | "online") => {
     if (cart.length === 0) {
       alert("Giỏ hàng của bạn đang trống!");
@@ -43,7 +60,7 @@ const Cart: React.FC = () => {
       </h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Danh sach san pham */}
+        {/* Danh sách sản phẩm */}
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6">
           <AnimatePresence>
             {cart.length > 0 ? (
@@ -67,7 +84,7 @@ const Cart: React.FC = () => {
           </AnimatePresence>
         </div>
 
-        {/* Tong tien + nut */}
+        {/* Tổng tiền + nút */}
         <div className="bg-gray-50 rounded-2xl shadow-md p-6 flex flex-col justify-between">
           <div className="mb-6">
             <p className="text-gray-500 font-medium">
@@ -83,7 +100,6 @@ const Cart: React.FC = () => {
               Chọn hình thức thanh toán
             </h3>
 
-            {/* COD */}
             <button
               onClick={() => handleCheckoutNavigation("cod")}
               disabled={cart.length === 0}
@@ -97,7 +113,6 @@ const Cart: React.FC = () => {
               💵 Thanh toán khi nhận hàng (COD)
             </button>
 
-            {/* Online */}
             <button
               onClick={() => handleCheckoutNavigation("online")}
               disabled={cart.length === 0}
@@ -111,7 +126,6 @@ const Cart: React.FC = () => {
               💳 Thanh toán Online
             </button>
 
-            {/* Quay lai mua sam */}
             <button
               onClick={() => window.history.back()}
               className="w-full px-6 py-4 bg-gray-100 border-2 border-blue-500 text-blue-600 font-semibold text-lg rounded-xl hover:bg-blue-50 hover:text-blue-700 transition-all shadow-sm hover:shadow-md"

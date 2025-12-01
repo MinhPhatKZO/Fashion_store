@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+import axios from 'axios'; 
 import { ApiResponse, PaginationResponse, User, Product, Category, Order, Review, Promotion  } from '../types';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -38,6 +38,8 @@ api.interceptors.response.use(
   }
 );
 
+// ==================== API ENDPOINTS ====================
+
 // Auth API
 export const authAPI = {
   register: (data: { name: string; email: string; password: string }) =>
@@ -55,7 +57,6 @@ export const authAPI = {
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
     api.put<ApiResponse<{ message: string }>>('/auth/change-password', data),
 };
-
 
 // Products API
 export const productsAPI = {
@@ -226,13 +227,11 @@ export const paymentAPI = {
     api.post<ApiResponse<{ order: Order }>>('/payment/confirm', { paymentIntentId, orderId }),
 };
 
-//---------------------------------------------------------------------------------------------------------------------------------------------------//
-
 // Admin API
 export const adminAPI = {
   // Lấy danh sách users theo role
   getUsers: (role: "user" | "seller") =>
-    api.get<User[]>(`/admin/users?role=${role}`),  // trả về User[]
+    api.get<User[]>(`/admin/users?role=${role}`),
   
   // Cập nhật role user
   updateUserRole: (id: string, role: "user" | "seller") =>
@@ -242,44 +241,63 @@ export const adminAPI = {
     ),
 
   // Xoá user
-  deleteUser: (id: string) => api.delete<{ message: string }>(`/admin/users/${id}`),
+  deleteUser: (id: string) => 
+    api.delete<{ message: string }>(`/admin/users/${id}`),
 
   // Promotions
-  getPromotions: () => api.get<Promotion[]>("/admin/promotions"),
+  getPromotions: () => 
+    api.get<Promotion[]>("/admin/promotions"),
+  
   createPromotion: (data: Partial<Promotion>) =>
     api.post<Promotion>("/admin/promotions", data),
+  
   updatePromotion: (id: string, data: Partial<Promotion>) =>
     api.put<Promotion>(`/admin/promotions/${id}`, data),
+  
   togglePromotion: (id: string) =>
     api.patch<Promotion>(`/admin/promotions/${id}/toggle`),
+  
   deletePromotion: (id: string) =>
     api.delete<{ message: string }>(`/admin/promotions/${id}`),
 
-   //Thống kê tổng quan dashboard
-  getStatistics: () => api.get<ApiResponse<{
-    totalUsers: number;
-    totalSellers: number;
-    totalProducts: number;
-    totalOrders: number;
-    totalRevenue: number;
-  }>>("/admin/statistics"),
+  // Thống kê tổng quan dashboard
+  getStatistics: () => 
+    api.get<ApiResponse<{
+      totalUsers: number;
+      totalSellers: number;
+      totalProducts: number;
+      totalOrders: number;
+      totalRevenue: number;
+    }>>("/admin/statistics"),
 
-  //Thống kê doanh thu seller
+  // Thống kê doanh thu seller
   getSellerRevenue: (params?: {
     startDate?: string;
     endDate?: string;
     groupBy?: "month" | "year";
-  }) => api.get<ApiResponse<Array<{
-    sellerId: string;
-    sellerName: string;
-    sellerEmail: string;
-    year?: number;
-    month?: number;
-    totalRevenue: number;
-    totalOrders: number;
-  }>>>("/admin/seller-revenue", { params }),
+  }) => 
+    api.get<ApiResponse<Array<{
+      sellerId: string;
+      sellerName: string;
+      sellerEmail: string;
+      year?: number;
+      month?: number;
+      totalRevenue: number;
+      totalOrders: number;
+    }>>>("/admin/seller-revenue", { params }),
 };
 
+// AI Chat API
+export const aiChatAPI = {
+  sendMessage: (data: {
+    message: string;
+    history?: Array<{ sender: string; text: string }>;
+  }) =>
+    api.post<{
+      reply: string;
+    }>('/ai/chat', data),
+};
 
-
+// ==================== EXPORTS ====================
+// Export default axios instance
 export default api;

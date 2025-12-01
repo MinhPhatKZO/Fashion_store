@@ -81,8 +81,8 @@ const Header: React.FC = () => {
           <Link to="/products?isFeatured=true" className="text-gray-700 hover:text-indigo-600 font-medium text-lg">
             Nổi bật
           </Link>
-          <Link to="/products?isOnSale=true" className="text-gray-700 hover:text-indigo-600 font-medium text-lg">
-            Khuyến mãi
+          <Link to="/orders" className="text-gray-700 hover:text-indigo-600 font-medium text-lg">
+            Đơn hàng
           </Link>
         </nav>
 
