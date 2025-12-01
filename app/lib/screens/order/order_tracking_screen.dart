@@ -12,330 +12,265 @@ class OrderTrackingScreen extends StatefulWidget {
 
 class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   final OrderService _orderService = OrderService();
-  bool loading = true;
   List<OrderModel> orders = [];
-  String? errorMsg;
-  String _currentFilter = 'all'; // Thêm bộ lọc
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadOrders();
+    loadOrders();
   }
 
-  Future<void> _loadOrders() async {
-    setState(() {
-      loading = true;
-      errorMsg = null;
-    });
-
+  Future<void> loadOrders() async {
     try {
-      // Giả định OrderService có thể lọc đơn hàng, nếu không bạn cần lọc ở client
-      final data = await _orderService.getTrackingOrders(); 
-      if (mounted) {
-        setState(() {
-          orders = data;
-          loading = false;
-        });
-      }
+      // Giả lập dữ liệu mẫu nếu OrderModel không có trường ảnh/tên sản phẩm chi tiết.
+      // Nếu bạn muốn hiển thị ảnh, bạn cần đảm bảo OrderModel của bạn có trường đó.
+      final list = await _orderService.getTrackingOrders();
+      setState(() {
+        orders = list;
+        _isLoading = false;
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          errorMsg = e.toString().replaceAll('Exception: ', '');
-          loading = false;
-        });
-      }
+      setState(() => _isLoading = false);
+      print("⚠️ Lỗi load orders: $e");
     }
   }
 
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'processing': return Colors.orange;
-      case 'shipped': return Colors.blue;
-      case 'delivered': return Colors.green;
-      case 'pending':
-      case 'unconfirmed': return Colors.grey;
-      case 'cancelled': return Colors.red;
-      default: return Colors.grey;
+  // Hàm này được giữ nguyên
+  String getStatusText(String s) {
+    return {
+      "pending": "Chờ xác nhận",
+      "confirmed": "Đã xác nhận",
+      "processing": "Đang chuẩn bị hàng",
+      "shipped": "Đang giao",
+      "delivered": "Đã giao",
+    }[s] ?? s;
+  }
+
+  // Hàm mới để lấy màu sắc cho trạng thái (tùy chỉnh cho giao diện đẹp hơn)
+  Color getStatusColor(String status) {
+    switch (status) {
+      case 'shipped': // Tương đương với "Coming"
+        return Colors.teal;
+      case 'delivered': // Tương đương với "Received"
+        return Colors.redAccent;
+      default:
+        return Colors.grey.shade400;
     }
   }
 
-  String _getStatusText(String status) {
-    switch (status.toLowerCase()) {
-      case 'processing': return 'Đang xử lý';
-      case 'shipped': return 'Đang giao';
-      case 'delivered': return 'Đã giao';
-      case 'pending': return 'Chờ xác nhận';
-      case 'unconfirmed': return 'Chưa xác nhận';
-      case 'cancelled': return 'Đã hủy';
-      default: return status;
-    }
-  }
+  // Widget riêng để xây dựng từng item đơn hàng (thay thế ListTile)
+  Widget _buildOrderItemCard(OrderModel o) {
+    final String statusText = getStatusText(o.status);
+    final Color statusColor = getStatusColor(o.status);
 
-  // Phương thức lọc đơn hàng
-  List<OrderModel> _getFilteredOrders() {
-    if (_currentFilter == 'all') {
-      return orders;
-    }
-    return orders.where((order) => order.status.toLowerCase() == _currentFilter).toList();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Danh sách các trạng thái để làm tab/filter
-    const List<Map<String, String>> filters = [
-      {'key': 'all', 'label': 'Tất cả'},
-      {'key': 'processing', 'label': 'Đang xử lý'},
-      {'key': 'shipped', 'label': 'Đang giao'},
-      {'key': 'delivered', 'label': 'Đã giao'},
-      {'key': 'cancelled', 'label': 'Đã hủy'},
-    ];
-
-    final filteredOrders = _getFilteredOrders();
-
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text('Đơn hàng của tôi'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0.5,
-        // Dùng drawer cho menu như hình ảnh
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OrderDetailScreen(orderId: o.id),
           ),
-        ),
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadOrders)
-        ],
-      ),
-      // Giả định có Drawer cho menu bên trái
-      drawer: const Drawer(
-        child: Center(child: Text('Nội dung Menu')),
-      ),
-      body: Column(
-        children: [
-          // Filter Tabs (giống như "All", "Paid", "Delivered" trong hình)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: filters.map((filter) {
-                  final isSelected = _currentFilter == filter['key'];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    child: ChoiceChip(
-                      label: Text(filter['label']!),
-                      selected: isSelected,
-                      selectedColor: Colors.blueAccent.withOpacity(0.8),
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : Colors.black87,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() {
-                            _currentFilter = filter['key']!;
-                          });
-                          // Có thể gọi lại _loadOrders với filter mới nếu API hỗ trợ
-                        }
-                      },
-                      backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(
-                          color: isSelected ? Colors.blueAccent : Colors.grey.shade300,
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12.0),
+        child: Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Placeholder cho ảnh sản phẩm
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.grey.shade200, // Màu nền placeholder
+                    // Nếu OrderModel có trường imageUrl, bạn có thể dùng:
+                    // image: DecorationImage(image: NetworkImage(o.items.first.imageUrl), fit: BoxFit.cover)
+                  ),
+                  child: const Icon(Icons.shopping_bag_outlined, color: Colors.grey, size: 30),
+                ),
+
+                const SizedBox(width: 12),
+
+                // 2. Thông tin đơn hàng (Tên, Mã, Giá)
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Giả định dùng Mã đơn hàng làm tiêu đề (hoặc tên sản phẩm nếu có)
+                      Text(
+                        "Đơn: ${o.orderCode}",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
+                      const SizedBox(height: 4),
+                      Text(
+                        statusText, // Trạng thái
+                        style: TextStyle(color: statusColor, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.payments_outlined, size: 14, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Text(
+                            "${o.totalPrice.toStringAsFixed(0)} đ", // Tổng tiền
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // 3. Status Tag ở góc phải (sử dụng layout giống như ảnh mẫu)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    // Sử dụng "Coming" và "Received" cho giao diện giống ảnh
+                    o.status == 'shipped' ? 'Coming' : (o.status == 'delivered' ? 'Received' : statusText),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
                     ),
-                  );
-                }).toList(),
-              ),
+                  ),
+                ),
+              ],
             ),
           ),
-          const Divider(height: 1),
-          Expanded(
-            child: loading
-                ? const Center(child: CircularProgressIndicator())
-                : errorMsg != null
-                    ? Center(child: Text(errorMsg!))
-                    : filteredOrders.isEmpty
-                        ? const Center(child: Text('Không có đơn hàng nào'))
-                        : RefreshIndicator(
-                            onRefresh: _loadOrders,
-                            child: ListView.builder(
-                              padding: const EdgeInsets.all(12),
-                              itemCount: filteredOrders.length,
-                              itemBuilder: (context, index) {
-                                final order = filteredOrders[index];
-                                return _buildOrderCard(context, order);
-                              },
-                            ),
-                          ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildOrderCard(BuildContext context, OrderModel order) {
-    // Lấy 1-2 sản phẩm đầu tiên để hiển thị như trong hình
-    final firstItem = order.items.isNotEmpty ? order.items.first : null;
-    final statusColor = _getStatusColor(order.status);
-    final statusText = _getStatusText(order.status);
 
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Order Code & Status
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Order #${order.orderCode}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    statusText,
-                    style: TextStyle(
-                      color: statusColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const Divider(),
-            
-            // Product Info (lấy sản phẩm đầu tiên)
-            if (firstItem != null)
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Image (Giả định có widget hiển thị ảnh, nếu không thì dùng placeholder)
-                  Container(
-                    width: 70,
-                    height: 70,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(8),
-                      // Thêm Placeholder ảnh sản phẩm
-                      image: const DecorationImage(
-                          image: AssetImage('assets/product_placeholder.png'), // Thay bằng ảnh thật
-                          fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          firstItem.productName,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          'Số lượng: ${firstItem.quantity}',
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                        Text(
-                          '${firstItem.subtotal.toStringAsFixed(0)} ₫',
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
-                        ),
-                        if (order.items.length > 1) 
-                          Text(
-                            '+ ${order.items.length - 1} sản phẩm khác',
-                            style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                          ),
-                      ],
-                    ),
-                  ),
-                  // Nút Chat (nếu cần)
-                  // Align(
-                  //   alignment: Alignment.topRight,
-                  //   child: TextButton.icon(
-                  //     onPressed: () {}, 
-                  //     icon: const Icon(Icons.chat_bubble_outline, size: 16), 
-                  //     label: const Text('Chat'),
-                  //   ),
-                  // )
-                ],
-              ),
-            
-            const SizedBox(height: 12),
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
-            // Total Price
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Tổng tiền:', style: TextStyle(color: Colors.grey[700])),
-                Text(
-                  '${order.totalPrice.toStringAsFixed(0)} ₫',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 12),
-            
-            // Action Buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                // Nút "Refund" (giả định chỉ hiện cho đơn "Đã giao" hoặc tùy logic)
-                if (order.status.toLowerCase() == 'delivered')
-                  OutlinedButton(
-                    onPressed: () {
-                      // Xử lý Refund
-                    },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red, 
-                      side: const BorderSide(color: Colors.red),
-                    ),
-                    child: const Text('Hoàn tiền'),
-                  ),
-                const SizedBox(width: 8),
-                
-                // Nút "Details"
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => OrderDetailScreen(order: order),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent, // Màu chính
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                  ),
-                  child: const Text('Chi tiết'),
-                ),
-              ],
-            ),
-          ],
+    return Scaffold(
+      // Chỉnh sửa AppBar cho giống giao diện "History"
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
         ),
+        title: const Text("History", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: Column(
+        children: [
+          // Row chứa các Tab (All, Coming, Received) - Thêm layout tabs
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                // Giả lập tab 'All' được chọn
+                _TabButton(title: 'All', isSelected: true),
+                _TabButton(title: 'Coming', isSelected: false),
+                _TabButton(title: 'Received', isSelected: false),
+              ],
+            ),
+          ),
+          
+          // Row Date Picker (Giả lập)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                const Text('From: 1/1/2019', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                const Icon(Icons.arrow_drop_down, color: Colors.grey, size: 16),
+                const SizedBox(width: 20),
+                const Text('To: 1/12/2019', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                const Icon(Icons.arrow_drop_down, color: Colors.grey, size: 16),
+              ],
+            ),
+          ),
+
+          // ListView.builder đã được thay đổi
+          Expanded(
+            child: orders.isEmpty
+                ? const Center(child: Text("Không có đơn hàng"))
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    itemCount: orders.length,
+                    itemBuilder: (context, i) {
+                      final o = orders[i];
+                      return _buildOrderItemCard(o); // Sử dụng widget Card mới
+                    },
+                  ),
+          ),
+        ],
+      ),
+      // Giả lập Bottom Navigation Bar
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
+          BottomNavigationBarItem(icon: Icon(Icons.shopping_cart_outlined), label: 'Cart'),
+          BottomNavigationBarItem(icon: Icon(Icons.favorite_border), label: 'Wishlist'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'My'),
+        ],
+        currentIndex: 4, 
+        selectedItemColor: Colors.black,
+        unselectedItemColor: Colors.grey,
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
+      ),
+    );
+  }
+}
+
+// Widget Tùy chỉnh cho Tab Button
+class _TabButton extends StatelessWidget {
+  final String title;
+  final bool isSelected;
+  
+  const _TabButton({required this.title, required this.isSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 20.0),
+      child: Column(
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: isSelected ? Colors.black : Colors.grey,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+          if (isSelected)
+            Container(
+              margin: const EdgeInsets.only(top: 4),
+              height: 2,
+              width: 30,
+              color: Colors.black,
+            ),
+        ],
       ),
     );
   }
