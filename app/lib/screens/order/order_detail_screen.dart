@@ -37,7 +37,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      print("⚠️ Lỗi load order: $e");
+      print(" Lỗi load order: $e");
     }
   }
 

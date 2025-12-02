@@ -9,9 +9,6 @@ import { loadCartFromStorage } from "./store/slices/cartSlice";
 import { CartProvider } from "./context/CartContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-// ✅ Components
-import AIChatBox from "./components/AIChatBox/AIChatbox";
-
 // Layouts
 import AdminLayout from "./components/Layout/AdminLayout";
 import SellerLayout from "./components/Layout/SellerLayout";
@@ -148,8 +145,7 @@ function AppContent() {
 
       <Toaster position="top-right" />
 
-      {/* ✅ AI Chatbox hiển thị trên mọi trang */}
-      <AIChatBox />
+
     </Router>
   );
 }

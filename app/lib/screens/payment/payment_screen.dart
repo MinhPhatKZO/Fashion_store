@@ -84,7 +84,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     setState(() => _isProcessing = true);
     try {
       final service = MoMoService();
-      final payment = await service.createPayment(orderId, amount); // positional param
+      final payment = await service.createPayment(orderId, amount); // lấy payment url từ MoMo
 
       if (payment != null && payment.payUrl.isNotEmpty) {
         final url = Uri.parse(payment.payUrl);
@@ -120,7 +120,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     setState(() => _isProcessing = true);
     try {
       final service = VNPayService();
-      final payment = await service.createPayment(orderId, amount); // positional param
+      final payment = await service.createPayment(orderId, amount); // lấy payment url từ VNPAY
 
       if (payment != null && payment.success && payment.paymentUrl.isNotEmpty) {
         final url = Uri.parse(payment.paymentUrl);

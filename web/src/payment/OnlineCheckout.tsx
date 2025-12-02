@@ -60,7 +60,7 @@ const OnlineCheckout: React.FC = () => {
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    // ✅ Truyền đúng orderId mới tạo sang MomoCheckout
+    //  Truyền đúng orderId mới tạo sang MomoCheckout
     navigate(`/checkout/online/momo?orderId=${res.data.data._id}`);
   } catch (err: any) {
     toast.error(err.response?.data?.message || "Lỗi tạo đơn hàng");

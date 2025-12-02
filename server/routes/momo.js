@@ -13,7 +13,7 @@ if (!process.env.MOMO_PARTNER_CODE ||
     !process.env.MOMO_REDIRECT_URL ||
     !process.env.MOMO_IPN_URL) 
 {
-    console.log("❌ MoMo config missing! Required variables:");
+    console.log("MoMo config missing! Required variables:");
     console.log("   - MOMO_PARTNER_CODE");
     console.log("   - MOMO_ACCESS_KEY");
     console.log("   - MOMO_SECRET_KEY");
@@ -21,9 +21,7 @@ if (!process.env.MOMO_PARTNER_CODE ||
     console.log("   - MOMO_IPN_URL");
 }
 
-/* =============================================
-   POST: CREATE MOMO PAYMENT REQUEST
-============================================= */
+// tạo payment request đến MoMo
 router.post('/payment', async (req, res) => {
     try {
         const { amount, orderInfo } = req.body;
@@ -32,7 +30,6 @@ router.post('/payment', async (req, res) => {
             return res.status(400).json({ message: "Missing amount or orderInfo" });
         }
 
-        // Lấy thông tin từ .env
         const partnerCode = process.env.MOMO_PARTNER_CODE;
         const accessKey = process.env.MOMO_ACCESS_KEY;
         const secretKey = process.env.MOMO_SECRET_KEY;
@@ -81,7 +78,7 @@ router.post('/payment', async (req, res) => {
 
         // Gửi request đến MoMo
         const options = {
-            hostname: 'test-payment.momo.vn',
+            hostname: 'test-payment.momo.vn', 
             port: 443,
             path: '/v2/gateway/api/create',
             method: 'POST',
@@ -94,7 +91,7 @@ router.post('/payment', async (req, res) => {
         const momoReq = https.request(options, momoRes => {
             let data = '';
 
-            momoRes.on('data', chunk => (data += chunk));
+            momoRes.on('data', chunk => (data += chunk)); // trả về https chia nhỏ chunks
             momoRes.on('end', () => {
                 try {
                     const json = JSON.parse(data);
@@ -109,7 +106,7 @@ router.post('/payment', async (req, res) => {
         });
 
         momoReq.on('error', e => {
-            console.error("❌ MoMo request error:", e);
+            console.error("MoMo request error:", e);
             res.status(500).json({
                 message: 'MoMo request failed',
                 error: e.message
@@ -120,7 +117,7 @@ router.post('/payment', async (req, res) => {
         momoReq.end();
 
     } catch (error) {
-        console.error("❌ MoMo server error:", error);
+        console.error("MoMo server error:", error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });

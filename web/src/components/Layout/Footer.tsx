@@ -87,7 +87,7 @@ const Footer: React.FC = () => {
               <div className="flex items-center space-x-3">
                 <MapPin className="h-5 w-5 text-gray-300" />
                 <span className="text-gray-300">
-                  123 Đường ABC, Quận 1, TP.HCM
+                 Nguyễn Văn Quá Đông Hưng Thuận, Quận 12, TP.HCM
                 </span>
               </div>
               <div className="flex items-center space-x-3">
@@ -96,7 +96,7 @@ const Footer: React.FC = () => {
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="h-5 w-5 text-gray-300" />
-                <span className="text-gray-300">info@fashionstore.com</span>
+                <span className="text-gray-300">hi@fashionstore.com</span>
               </div>
             </div>
           </div>
@@ -105,7 +105,7 @@ const Footer: React.FC = () => {
         <div className="border-t border-gray-800 mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-300 text-sm">
-              © 2024 Fashion Store. Tất cả quyền được bảo lưu.
+              © 2025 Fashion Store. Tất cả quyền được bảo lưu.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <Link to="/privacy" className="text-gray-300 hover:text-white text-sm transition-colors">

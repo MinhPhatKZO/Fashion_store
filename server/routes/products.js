@@ -29,7 +29,7 @@ const toObjectIds = (arr) => {
         .map((id) => new mongoose.Types.ObjectId(id));
 };
 
-// 🎯 Route: Lấy danh sách sản phẩm (có lọc, phân trang, tìm kiếm)
+//  Route: Lấy danh sách sản phẩm (có lọc, phân trang, tìm kiếm)
 router.get("/", async (req, res) => {
     try {
         const {
@@ -94,7 +94,7 @@ router.get("/", async (req, res) => {
     }
 });
 
-// ✅ Route: Lấy dữ liệu filter (categories + brands)
+// Route: Lấy dữ liệu filter (categories + brands)
 router.get("/filters", async (req, res) => {
     try {
         const categories = await Category.find({}, "_id name slug");
@@ -106,7 +106,7 @@ router.get("/filters", async (req, res) => {
     }
 });
 
-// ✅ Route: Lấy sản phẩm nổi bật
+//  Route: Lấy sản phẩm nổi bật
 router.get("/featured", async (req, res) => {
     try {
         const products = await Product.find({
@@ -136,12 +136,12 @@ router.get("/:id", async (req, res) => {
 
         res.json({ product });
     } catch (error) {
-        console.error("❌ Lỗi lấy chi tiết sản phẩm:", error);
+        console.error("Lỗi lấy chi tiết sản phẩm:", error);
         res.status(500).json({ message: "Lỗi server" });
     }
 });
 
-// ✅ Route: Lấy sản phẩm liên quan
+//  Route: Lấy sản phẩm liên quan
 router.get("/related/:id", async (req, res) => {
     try {
         const { id } = req.params;
@@ -183,7 +183,7 @@ router.get("/related/:id", async (req, res) => {
         }
 res.json({ relatedProducts: related });
     } catch (error) {
-        console.error("❌ Lỗi lấy sản phẩm liên quan:", error);
+        console.error("Lỗi lấy sản phẩm liên quan:", error);
         res.status(500).json({ message: "Lỗi server khi tải sản phẩm liên quan" });
     }
 });
@@ -202,11 +202,11 @@ router.get('/:id/variants', async (req, res) => {
         });
 
     } catch (error) {
-        console.error("❌ Lỗi khi tìm kiếm biến thể sản phẩm:", error);
+        console.error("Lỗi khi tìm kiếm biến thể sản phẩm:", error);
         res.status(500).json({ message: 'Lỗi server khi tải biến thể', error: error.message });
     }
 });
-// 🎯 Route: Lấy thông tin chi tiết nhiều sản phẩm cho Giỏ hàng
+// Route: Lấy thông tin chi tiết nhiều sản phẩm cho Giỏ hàng
 router.post("/cart-items", async (req, res) => {
     try {
         const { productIds } = req.body; 
@@ -231,7 +231,7 @@ router.post("/cart-items", async (req, res) => {
 
         res.json({ items: products });
     } catch (error) {
-        console.error("❌ Lỗi chi tiết khi lấy sản phẩm giỏ hàng:", error); 
+        console.error("Lỗi chi tiết khi lấy sản phẩm giỏ hàng:", error); 
         res.status(500).json({ 
             message: "Lỗi server khi tải chi tiết giỏ hàng", 
             error: error.message,

@@ -9,7 +9,7 @@ const { auth, adminAuth } = require('../middleware/auth');
 const router = express.Router();
 
 /* ==============================
-   🧭 1. Dashboard Statistics
+   1. Dashboard Statistics
 ================================ */
 router.get('/statistics', auth, adminAuth, async (req, res) => {
   try {
@@ -36,7 +36,7 @@ router.get('/statistics', auth, adminAuth, async (req, res) => {
 });
 
 /* ==============================
-   👥 2. Manage Users & Sellers
+   2. Manage Users & Sellers
 ================================ */
 router.get('/users', auth, adminAuth, async (req, res) => {
   try {
@@ -183,7 +183,7 @@ router.delete('/promotions/:id', auth, adminAuth, async (req, res) => {
   }
 });
 
-// Route: GET /admin/seller-revenue
+// Route: GET /admin/seller-thống kê
 router.get('/seller-revenue', auth, adminAuth, async (req, res) => {
   try {
     const { startDate, endDate, groupBy } = req.query;

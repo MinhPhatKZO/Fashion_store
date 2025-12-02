@@ -4,8 +4,7 @@ import 'package:http/http.dart' as http;
 class AuthService {
   // Thay đổi URL này thành URL backend của bạn
   static const String baseUrl = 'http://localhost:5000/api/auth';
-  // Nếu chạy trên emulator Android: http://10.0.2.2:5000/api/auth
-  // Nếu chạy trên thiết bị thật: http://YOUR_IP:5000/api/auth
+
 
   /// Register new user
  Future<Map<String, dynamic>> register(
@@ -64,7 +63,7 @@ class AuthService {
     }
   }
 
-  /// Get user profile
+  /// lấy thông tin user
   Future<Map<String, dynamic>> getProfile(String token) async {
     try {
       final response = await http.get(
@@ -87,7 +86,7 @@ class AuthService {
     }
   }
 
-  /// Update user profile
+ 
   Future<Map<String, dynamic>> updateProfile(
     String token, {
     String? name,

@@ -4,13 +4,13 @@ const qs = require("qs");
 const crypto = require("crypto");
 const moment = require("moment");
 
-// ================== sort params ==================
+// tạo dữ liệu để ký hash
 function sortObject(obj) {
   let sorted = {};
   Object.keys(obj)
     .sort()
     .forEach((key) => {
-      sorted[key] = encodeURIComponent(obj[key]).replace(/%20/g, "+");
+      sorted[key] = encodeURIComponent(obj[key]).replace(/%20/g, "+"); 
     });
   return sorted;
 }
@@ -19,12 +19,10 @@ router.post("/create_payment_url", (req, res) => {
   try {
     process.env.TZ = "Asia/Ho_Chi_Minh";
 
-    // ✅ Log để debug
-    console.log("📥 Request body:", req.body);
+    console.log("Request body:", req.body);
 
     const { orderId, amount, bankCode, language } = req.body;
 
-    // ✅ Validate input
     if (!orderId || !amount) {
       return res.status(400).json({
         success: false,
@@ -34,7 +32,7 @@ router.post("/create_payment_url", (req, res) => {
 
     const date = new Date();
     const createDate = moment(date).format("YYYYMMDDHHmmss");
-
+    // lấy địa chỉ IP của khách hàng gửi yêu cầu 
     const ipAddr =
       req.headers["x-forwarded-for"] ||
       req.socket?.remoteAddress ||
@@ -45,16 +43,15 @@ router.post("/create_payment_url", (req, res) => {
     let vnpUrl = process.env.VNP_URL;
     const returnUrl = process.env.VNP_RETURNURL;
 
-    // ✅ Kiểm tra config
     if (!tmnCode || !secretKey || !vnpUrl || !returnUrl) {
-      console.error("❌ Missing VNPay config");
+      console.error("Missing VNPay config");
       return res.status(500).json({
         success: false,
         message: "Cấu hình VNPay chưa đầy đủ"
       });
     }
 
-    const amountInVND = Math.round(Number(amount));
+    const amountInVND = Math.round(Number(amount)); // chuyển sang vnd
     const locale = language || "vn";
 
     let vnp_Params = {
@@ -72,39 +69,39 @@ router.post("/create_payment_url", (req, res) => {
       vnp_CreateDate: createDate,
     };
 
-    if (bankCode) vnp_Params["vnp_BankCode"] = bankCode;
+    if (bankCode) vnp_Params["vnp_BankCode"] = bankCode; // thêm mã ngân hàng nếu có
 
     vnp_Params = sortObject(vnp_Params);
 
+    // ghép chuỗi để ký hash
     const signData = qs.stringify(vnp_Params, { encode: false });
     const hmac = crypto.createHmac("sha512", secretKey);
     const secureHash = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
 
+    //thêm chữ ký vào params
     vnp_Params["vnp_SecureHash"] = secureHash;
+  
     vnpUrl += "?" + qs.stringify(vnp_Params, { encode: false });
-
-    console.log("✅ Payment URL created:", vnpUrl);
-
+    console.log("Payment URL created:", vnpUrl);
     return res.json({ success: true, paymentUrl: vnpUrl });
   } catch (error) {
-    console.error("❌ Create payment URL error:", error);
-    return res.status(500).json({
+    console.error("Create payment URL error:", error);
+    return res.status(500).json({ 
       success: false,
       message: "Lỗi tạo URL thanh toán"
     });
   }
 });
 
-// ================== 2. vnpay_return ==================
 router.get("/vnpay_return", (req, res) => {
   let vnp_Params = req.query;
-  const secureHash = vnp_Params["vnp_SecureHash"];
+  const secureHash = vnp_Params["vnp_SecureHash"]; // lấy giá trị chữ ký từ query
 
   delete vnp_Params["vnp_SecureHash"];
   delete vnp_Params["vnp_SecureHashType"];
 
   vnp_Params = sortObject(vnp_Params);
-
+//ghép chuỗi để ký hash
   const signData = qs.stringify(vnp_Params, { encode: false });
   const hmac = crypto.createHmac("sha512", process.env.VNP_HASHSECRET);
   const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
@@ -121,7 +118,7 @@ router.get("/vnpay_return", (req, res) => {
   return res.status(400).json({ success: false, message: "Checksum failed" });
 });
 
-// ================== 3. vnpay_ipn ==================
+
 router.post("/vnpay_ipn", (req, res) => {
   let vnp_Params = req.body;
   const secureHash = vnp_Params["vnp_SecureHash"];
@@ -136,7 +133,7 @@ router.post("/vnpay_ipn", (req, res) => {
   const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
 
   if (secureHash === signed) {
-    // TODO: kiểm tra đơn hàng trong DB và cập nhật trạng thái thanh toán
+    //kiểm tra đơn hàng trong DB và cập nhật trạng thái thanh toán
     return res.status(200).json({ RspCode: "00", Message: "Success" });
   }
 

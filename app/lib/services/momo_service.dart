@@ -27,13 +27,13 @@ class MoMoService {
   final String baseUrl = "http://192.168.2.42:5000/api/momo";
 
   Future<MoMoPayment?> createPayment(String orderId, double amount) async {
-    final url = Uri.parse("$baseUrl/payment");
+    final url = Uri.parse("$baseUrl/payment"); // tạo payment endpoint
 
     final body = jsonEncode({
       "orderId": orderId,
-      "amount": amount.toInt(), // MoMo yêu cầu số nguyên
+      "amount": amount.toInt(),
       "orderInfo": "Thanh toán đơn hàng $orderId",
-      "returnUrl": "http://your-public-url/momo-return", // public URL hoặc ngrok
+      "returnUrl": "http://your-public-url/momo-return", 
       "notifyUrl": "http://your-public-url/momo-notify",
     });
 
@@ -47,22 +47,22 @@ class MoMoService {
       if (response.statusCode == 200) {
         return MoMoPayment.fromJson(jsonDecode(response.body));
       } else {
-        print("⚠️ MoMo createPayment failed: ${response.body}");
+        print("MoMo createPayment lỗi: ${response.body}");
       }
     } catch (e) {
-      print("⚠️ MoMoService error: $e");
+      print("MoMoService lỗi: $e");
     }
     return null;
   }
 }
 
-// Flutter Web: sử dụng MoMoService
+
 Future<void> payMoMo(BuildContext context, String orderId, double amount) async {
   final service = MoMoService();
   final payment = await service.createPayment(orderId, amount);
 
   if (payment != null && payment.payUrl.isNotEmpty) {
-    final url = Uri.parse(payment.payUrl);
+    final url = Uri.parse(payment.payUrl); // Mở liên kết MoMo và chuyển url thành Uri
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     } else {

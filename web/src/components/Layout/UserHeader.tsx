@@ -1,8 +1,8 @@
+// Header.tsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ShoppingCart, User, LogOut } from "lucide-react";
 
-// Định nghĩa kiểu cho item giỏ hàng
 interface CartItem {
   id: string;
   name: string;
@@ -20,7 +20,6 @@ const Header: React.FC = () => {
   const [userName, setUserName] = useState<string | null>(null);
   const [itemCount, setItemCount] = useState<number>(0);
 
-  // Lấy user & giỏ hàng từ localStorage
   useEffect(() => {
     const name = localStorage.getItem("userName");
     setUserName(name);
@@ -30,7 +29,7 @@ const Header: React.FC = () => {
       try {
         const cart: CartStorage = JSON.parse(storedCart);
         const totalItems = cart.items
-          ? cart.items.reduce((sum: number, item: CartItem) => sum + item.quantity, 0)
+          ? cart.items.reduce((sum, item) => sum + item.quantity, 0)
           : 0;
         setItemCount(totalItems);
       } catch {
@@ -39,7 +38,6 @@ const Header: React.FC = () => {
     }
   }, []);
 
-  // Lắng nghe thay đổi localStorage
   useEffect(() => {
     const handleStorageChange = () => {
       const storedCart = localStorage.getItem("localCart");
@@ -47,7 +45,7 @@ const Header: React.FC = () => {
         try {
           const cart: CartStorage = JSON.parse(storedCart);
           const totalItems = cart.items
-            ? cart.items.reduce((sum: number, item: CartItem) => sum + item.quantity, 0)
+            ? cart.items.reduce((sum, item) => sum + item.quantity, 0)
             : 0;
           setItemCount(totalItems);
         } catch {
@@ -74,7 +72,6 @@ const Header: React.FC = () => {
   return (
     <header className="bg-white shadow-md border-b border-gray-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto h-20 px-8 flex items-center justify-between">
-        {/* Logo */}
         <Link
           to="/"
           className="text-3xl font-extrabold text-indigo-600 tracking-wide hover:text-indigo-700 transition"
@@ -82,7 +79,6 @@ const Header: React.FC = () => {
           Fashion Store
         </Link>
 
-        {/* Navigation */}
         <nav className="hidden md:flex items-center space-x-10 flex-1 justify-center">
           <Link to="/" className="text-gray-700 hover:text-indigo-600 font-medium text-lg">
             Trang chủ
@@ -101,9 +97,7 @@ const Header: React.FC = () => {
           </Link>
         </nav>
 
-        {/* Khu vực bên phải */}
         <div className="flex items-center gap-6">
-          {/* Giỏ hàng */}
           <Link
             to="/cart"
             className="relative text-gray-700 hover:text-indigo-600 transition-transform hover:scale-110"
@@ -116,13 +110,17 @@ const Header: React.FC = () => {
             )}
           </Link>
 
-          {/* Nếu đã đăng nhập */}
           {userName ? (
             <div className="flex items-center gap-4">
-              <span className="text-gray-700 font-semibold flex items-center gap-2 text-lg">
+              {/* Thêm Link tới profile */}
+              <Link
+                to="/profile"
+                className="text-gray-700 font-semibold flex items-center gap-2 text-lg hover:text-indigo-600 transition"
+              >
                 <User className="h-6 w-6 text-indigo-600" />
                 {userName}
-              </span>
+              </Link>
+
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-2 text-sm font-semibold text-red-600 hover:text-red-700 transition"

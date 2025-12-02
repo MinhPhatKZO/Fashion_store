@@ -11,12 +11,14 @@ const AdminDashboard: React.FC = () => {
   const fetchUsers = async (role: "user" | "seller") => {
     setLoading(true);
     try {
-      const res = await adminAPI.getUsers(role); // trả về User[]
+      const res = await adminAPI.getUsers(role);
+
+      // API trả trực tiếp User[] nên res.data CHÍNH LÀ MẢNG USER
       setUsers(res.data || []);
     } catch (error) {
       console.error("Fetch users error:", error);
+      alert("Không thể tải danh sách người dùng");
       setUsers([]);
-      alert("Không thể tải danh sách users");
     } finally {
       setLoading(false);
     }
@@ -26,30 +28,30 @@ const AdminDashboard: React.FC = () => {
   const handleRoleChange = async (userId: string, newRole: "user" | "seller") => {
     try {
       await adminAPI.updateUserRole(userId, newRole);
-      setUsers(prev =>
-        prev.map(u => (u._id === userId ? { ...u, role: newRole } : u))
+
+      setUsers((prev) =>
+        prev.map((u) => (u._id === userId ? { ...u, role: newRole } : u))
       );
     } catch (error) {
       console.error("Update role error:", error);
-      alert("Không thể cập nhật role. Vui lòng thử lại.");
+      alert("Không thể cập nhật vai trò người dùng.");
     }
   };
 
   // Xoá user
   const handleDeleteUser = async (userId: string) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xoá người dùng này không?")) return;
+    if (!window.confirm("Bạn có chắc chắn muốn xoá người dùng này?")) return;
 
     try {
       await adminAPI.deleteUser(userId);
-      setUsers(prev => prev.filter(u => u._id !== userId));
+      setUsers((prev) => prev.filter((u) => u._id !== userId));
       alert("Xoá người dùng thành công");
     } catch (error) {
       console.error("Delete user error:", error);
-      alert("Không thể xoá người dùng. Vui lòng thử lại.");
+      alert("Không thể xoá người dùng.");
     }
   };
 
-  // Khi chọn role hiển thị
   useEffect(() => {
     fetchUsers(selectedRole);
   }, [selectedRole]);
@@ -65,7 +67,9 @@ const AdminDashboard: React.FC = () => {
             key={role}
             onClick={() => setSelectedRole(role as "user" | "seller")}
             className={`px-4 py-2 rounded-lg font-medium ${
-              selectedRole === role ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"
+              selectedRole === role
+                ? "bg-indigo-600 text-white"
+                : "bg-gray-200 text-gray-700"
             }`}
           >
             {role === "user" ? "User" : "Seller"}
@@ -73,11 +77,10 @@ const AdminDashboard: React.FC = () => {
         ))}
       </div>
 
-      {/* Loading / Empty / Table */}
       {loading ? (
         <p>Đang tải dữ liệu...</p>
       ) : users.length === 0 ? (
-        <p>Chưa có dữ liệu cho role này.</p>
+        <p>Không có dữ liệu cho vai trò này.</p>
       ) : (
         <table className="min-w-full border border-gray-200">
           <thead>
@@ -91,6 +94,7 @@ const AdminDashboard: React.FC = () => {
               <th className="p-2 border">Actions</th>
             </tr>
           </thead>
+
           <tbody>
             {users.map((u, index) => (
               <tr key={u._id} className="text-center hover:bg-gray-50">
@@ -99,6 +103,8 @@ const AdminDashboard: React.FC = () => {
                 <td className="p-2 border">{u.email || "-"}</td>
                 <td className="p-2 border">{u.addresses?.[0]?.address || "-"}</td>
                 <td className="p-2 border">{u.phone || "-"}</td>
+
+                {/* Role Selector */}
                 <td className="p-2 border">
                   <select
                     value={u.role}
@@ -112,6 +118,8 @@ const AdminDashboard: React.FC = () => {
                     <option value="seller">Seller</option>
                   </select>
                 </td>
+
+                {/* Delete */}
                 <td className="p-2 border">
                   <button
                     onClick={() => handleDeleteUser(u._id)}

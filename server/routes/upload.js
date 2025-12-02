@@ -5,14 +5,14 @@ const fs = require('fs');
 
 const router = express.Router();
 
-// ✅ Tạo thư mục uploads nếu chưa tồn tại
+// Tạo thư mục uploads nếu chưa tồn tại
 const uploadDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
   console.log('✅ Đã tạo thư mục uploads');
 }
 
-// ✅ Cấu hình nơi lưu file upload
+// Cấu hình nơi lưu file upload
 const storage = multer.diskStorage({
   destination(req, file, cb) {
     cb(null, uploadDir); // Sử dụng đường dẫn tuyệt đối
@@ -27,7 +27,7 @@ const storage = multer.diskStorage({
   },
 });
 
-// ✅ File filter - chỉ cho phép ảnh
+// File filter - chỉ cho phép ảnh
 const fileFilter = (req, file, cb) => {
   const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
   
@@ -46,7 +46,7 @@ const upload = multer({
   }
 });
 
-// ✅ API upload 1 ảnh
+// API upload 1 ảnh
 router.post('/', upload.single('image'), (req, res) => {
   try {
     if (!req.file) {
@@ -58,8 +58,8 @@ router.post('/', upload.single('image'), (req, res) => {
 
     // Trả về đường dẫn file để lưu vào database
     const imagePath = `/uploads/${req.file.filename}`;
-    
-    console.log('✅ Upload thành công:', req.file.filename);
+  
+    console.log('Upload thành công:', req.file.filename);
     
     res.json({ 
       success: true,
@@ -73,7 +73,7 @@ router.post('/', upload.single('image'), (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Lỗi upload:', error);
+    console.error(' Lỗi upload:', error);
     res.status(500).json({ 
       success: false,
       message: 'Lỗi khi upload ảnh',
@@ -82,7 +82,7 @@ router.post('/', upload.single('image'), (req, res) => {
   }
 });
 
-// ✅ API upload nhiều ảnh
+// API upload nhiều ảnh
 router.post('/multiple', upload.array('images', 10), (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
@@ -94,7 +94,7 @@ router.post('/multiple', upload.array('images', 10), (req, res) => {
 
     const imagePaths = req.files.map(file => `/uploads/${file.filename}`);
     
-    console.log(`✅ Upload ${req.files.length} ảnh thành công`);
+    console.log(`Upload ${req.files.length} ảnh thành công`);
     
     res.json({ 
       success: true,
@@ -118,7 +118,7 @@ router.post('/multiple', upload.array('images', 10), (req, res) => {
   }
 });
 
-// ✅ Xử lý lỗi Multer
+//  Xử lý lỗi Multer
 router.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {

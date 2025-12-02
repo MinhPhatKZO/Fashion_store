@@ -45,7 +45,7 @@ router.post(
         password,
         phone,
         address,
-        role: "user"     // 🔥 role mặc định
+        role: "user"     // role mặc định
       });
 
       await user.save();
@@ -107,7 +107,7 @@ router.post(
         { expiresIn: '7d' }
       );
 
-      // 🔥 Return đúng format frontend cần
+      //  Return đúng format frontend cần
       const userResponse = {
         _id: user._id,          // FIXED !!!
         name: user.name,
