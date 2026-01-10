@@ -63,7 +63,7 @@ class _CartScreenState extends State<CartScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Your Cart',
+          'Giỏ hàng của bạn',
           style: TextStyle(
             color: _textColor,
             fontWeight: FontWeight.bold,

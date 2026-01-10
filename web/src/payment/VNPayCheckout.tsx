@@ -103,10 +103,10 @@ const VNPayCheckout: React.FC = () => {
         },
         body: JSON.stringify({ orderId: orderData._id, amount: orderData.totalPrice }),
       });
-      console.log("📤 Response status:", payRes.status); // Thêm log
+      console.log("Response status:", payRes.status); // Thêm log
 
       const payData = await payRes.json();
-      console.log("📦 Response data:", payData); // Thêm log
+      console.log("Response data:", payData); // Thêm log
       if (payData.paymentUrl) {
         window.location.href = payData.paymentUrl;
       } else {

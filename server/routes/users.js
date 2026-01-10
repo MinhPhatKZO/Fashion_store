@@ -5,9 +5,7 @@ const { auth, adminAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
-// @route   GET /api/users/wishlist
-// @desc    Get user wishlist
-// @access  Private
+
 router.get('/wishlist', auth, async (req, res) => {
   try {
     const user = await User.findById(req.userId).populate({
@@ -25,9 +23,6 @@ router.get('/wishlist', auth, async (req, res) => {
   }
 });
 
-// @route   POST /api/users/wishlist
-// @desc    Add product to wishlist
-// @access  Private
 router.post('/wishlist', auth, [
   body('productId').isMongoId().withMessage('Valid product ID is required')
 ], async (req, res) => {
@@ -54,9 +49,7 @@ router.post('/wishlist', auth, [
   }
 });
 
-// @route   DELETE /api/users/wishlist/:productId
-// @desc    Remove product from wishlist
-// @access  Private
+
 router.delete('/wishlist/:productId', auth, async (req, res) => {
   try {
     const { productId } = req.params;
@@ -73,9 +66,6 @@ router.delete('/wishlist/:productId', auth, async (req, res) => {
   }
 });
 
-// @route   GET /api/users/addresses
-// @desc    Get user addresses
-// @access  Private
 router.get('/addresses', auth, async (req, res) => {
   try {
     const user = await User.findById(req.userId);

@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
-import CartItem from "../components/CartItem";
-import { useCart } from "../context/CartContext";
+import CartItem from "./CartItem";
+import { useCart } from "./CartContext";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
@@ -56,7 +57,7 @@ const Cart: React.FC = () => {
   return (
     <motion.div className="max-w-7xl mx-auto mt-10 px-4">
       <h2 className="text-3xl font-bold mb-8 text-gray-800 border-b pb-2">
-        🛒 Giỏ hàng của bạn
+       Giỏ hàng của bạn
       </h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -78,7 +79,7 @@ const Cart: React.FC = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
               >
-                Giỏ hàng trống, hãy thêm sản phẩm 😄
+                Giỏ hàng trống, hãy thêm sản phẩm 
               </motion.p>
             )}
           </AnimatePresence>
@@ -110,7 +111,7 @@ const Cart: React.FC = () => {
                     : "bg-indigo-600 text-white shadow-indigo-400/50 hover:bg-indigo-700"
                 }`}
             >
-              💵 Thanh toán khi nhận hàng (COD)
+              Thanh toán khi nhận hàng (COD)
             </button>
 
             <button
@@ -123,7 +124,7 @@ const Cart: React.FC = () => {
                     : "bg-green-600 text-white shadow-green-400/50 hover:bg-green-700"
                 }`}
             >
-              💳 Thanh toán Online
+              Thanh toán Online
             </button>
 
             <button

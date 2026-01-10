@@ -2,29 +2,34 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const Product = require("../../models/Product");
-const { auth, sellerAuth } = require("../../middleware/auth");
+// Import sellerBrandAuth để xử lý logic 1 seller - 1 brand
+const { auth, sellerBrandAuth } = require("../../middleware/auth");
 
 const router = express.Router();
 
 /* ============================
-   MULTER CONFIG
+   MULTER CONFIG (Cấu hình upload ảnh)
 =============================== */
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
+    // Đường dẫn lưu ảnh: public/assets/products
     cb(null, path.join(__dirname, "../../../web/public/assets/products"));
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
+    // Đặt tên file unique: timestamp-random.ext
+    cb(null, Date.now() + "-" + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
   }
 });
 const upload = multer({ storage });
 
 /* ============================
-   GET ALL PRODUCTS OF SELLER
+   1. GET ALL PRODUCTS
+   - Lấy danh sách sản phẩm thuộc Brand của Seller
 =============================== */
-router.get("/", auth, async (req, res) => {
+router.get("/", auth, sellerBrandAuth, async (req, res) => {
   try {
-    const products = await Product.find({ seller: req.userId })
+    // Sử dụng req.sellerBrandId từ middleware để lọc đúng sản phẩm
+    const products = await Product.find({ brandId: req.sellerBrandId })
       .sort({ createdAt: -1 });
 
     res.json({
@@ -39,9 +44,10 @@ router.get("/", auth, async (req, res) => {
 });
 
 /* ============================
-   CREATE PRODUCT
+   2. CREATE PRODUCT
+   - Tạo sản phẩm mới gắn với Brand của Seller
 =============================== */
-router.post("/", auth, sellerAuth, async (req, res) => {
+router.post("/", auth, sellerBrandAuth, async (req, res) => {
   try {
     const {
       name,
@@ -50,7 +56,6 @@ router.post("/", auth, sellerAuth, async (req, res) => {
       originalPrice,
       categoryId,
       subcategoryId,
-      brandId,
       sku,
       stock,
       tags,
@@ -63,28 +68,31 @@ router.post("/", auth, sellerAuth, async (req, res) => {
       originalPrice,
       categoryId,
       subcategoryId,
-      brandId,
       sku,
       stock,
       tags,
-      seller: req.userId,
+      // QUAN TRỌNG:
+      brandId: req.sellerBrandId, // Tự động gán Brand của Seller
+      seller: req.userId,         // Gán ID người tạo
+      isActive: true,
+      images: [] // Khởi tạo mảng ảnh rỗng, upload sau
     });
 
-    res.json({ success: true, product });
+    res.status(201).json({ success: true, product });
   } catch (error) {
     console.error("❌ CREATE PRODUCT ERROR:", error);
     res.status(500).json({ success: false, message: "Lỗi tạo sản phẩm" });
   }
 });
 
-// ===============================
-// GET PRODUCT (seller only)
-// ===============================
-router.get("/:id", auth, async (req, res) => {
+/* ============================
+   3. GET PRODUCT DETAIL
+=============================== */
+router.get("/:id", auth, sellerBrandAuth, async (req, res) => {
   try {
     const product = await Product.findOne({
       _id: req.params.id,
-      seller: req.user.id,
+      brandId: req.sellerBrandId, // Chỉ xem được sp của brand mình
     });
 
     if (!product) {
@@ -98,22 +106,30 @@ router.get("/:id", auth, async (req, res) => {
   }
 });
 
-// ===============================
-// UPDATE PRODUCT
-// ===============================
-router.put("/:id", auth, async (req, res) => {
+/* ============================
+   4. UPDATE PRODUCT
+=============================== */
+router.put("/:id", auth, sellerBrandAuth, async (req, res) => {
   try {
     const updateData = {
       name: req.body.name,
       price: req.body.price,
+      originalPrice: req.body.originalPrice,
       stock: req.body.stock,
-      brandId: req.body.brandId || null,
+      description: req.body.description,
       categoryId: req.body.categoryId || null,
-      images: req.body.images ?? [],
+      subcategoryId: req.body.subcategoryId || null,
+      tags: req.body.tags,
+      isActive: req.body.isActive,
     };
 
+    // Nếu frontend gửi mảng images mới (đã xử lý xóa/sắp xếp)
+    if (req.body.images) {
+      updateData.images = req.body.images;
+    }
+
     const product = await Product.findOneAndUpdate(
-      { _id: req.params.id, seller: req.user.id },
+      { _id: req.params.id, brandId: req.sellerBrandId }, // Điều kiện an toàn
       updateData,
       { new: true }
     );
@@ -129,27 +145,34 @@ router.put("/:id", auth, async (req, res) => {
   }
 });
 
-// ===============================
-// UPLOAD IMAGES
-// ===============================
-router.post("/:id/images", auth, upload.array("images", 10), async (req, res) => {
+/* ============================
+   5. UPLOAD IMAGES
+   - Lưu ảnh dạng Object { url: "..." } để đồng bộ với DB cũ
+=============================== */
+router.post("/:id/images", auth, sellerBrandAuth, upload.array("images", 10), async (req, res) => {
   try {
     const product = await Product.findOne({
       _id: req.params.id,
-      seller: req.user.id,
+      brandId: req.sellerBrandId,
     });
 
     if (!product) return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
 
-    const uploadedPaths = req.files.map((f) => `/assets/products/${f.filename}`);
+    // ✅ CHỈNH SỬA: Map sang Object structure khớp với products.json
+    const newImages = req.files.map((f) => ({
+      url: `/assets/products/${f.filename}`,
+      alt: f.originalname || ""
+    }));
 
-    product.images = [...product.images, ...uploadedPaths];
+    // Nối vào mảng cũ
+    product.images = [...(product.images || []), ...newImages];
 
     await product.save();
 
     res.json({
       message: "Upload ảnh thành công",
       product,
+      newImages // Trả về để FE hiển thị ngay
     });
   } catch (err) {
     console.error("UPLOAD IMAGE ERROR:", err);
@@ -157,16 +180,14 @@ router.post("/:id/images", auth, upload.array("images", 10), async (req, res) =>
   }
 });
 
-module.exports = router;
-
 /* ============================
-   DELETE PRODUCT
+   6. DELETE PRODUCT
 =============================== */
-router.delete("/:id", auth, async (req, res) => {
+router.delete("/:id", auth, sellerBrandAuth, async (req, res) => {
   try {
     const product = await Product.findOneAndDelete({
       _id: req.params.id,
-      seller: req.userId,
+      brandId: req.sellerBrandId,
     });
 
     if (!product)

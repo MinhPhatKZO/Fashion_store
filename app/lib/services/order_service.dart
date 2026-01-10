@@ -8,69 +8,79 @@ class OrderService {
 
   Future<List<OrderModel>> getTrackingOrders({List<String>? statuses}) async {
     final token = await AuthToken.getToken();
-    if (token == null || token.isEmpty) {
-      throw Exception('Chưa đăng nhập. Vui lòng đăng nhập lại.');
-    }
+    if (token == null) throw Exception("Token expired");
 
-    statuses ??= ["pending", "unconfirmed", "processing", "shipped", "delivered"];
+    statuses ??= ["pending", "confirmed", "processing", "shipped", "delivered"];
     List<OrderModel> result = [];
 
     for (String st in statuses) {
       try {
-        final uri = Uri.parse("$baseUrl?status=$st");
+        final url = Uri.parse("$baseUrl?status=$st");
         final res = await http.get(
-          uri,
+          url,
           headers: {
             "Authorization": "Bearer $token",
             "Content-Type": "application/json",
           },
-        ).timeout(
-          const Duration(seconds: 10),
-          onTimeout: () => throw Exception('Timeout: Không thể kết nối đến server'),
         );
 
         if (res.statusCode == 200) {
           final body = jsonDecode(res.body);
-          List list = [];
-          if (body is Map<String, dynamic>) {
-            list = body['orders'] ?? body['data'] ?? body['results'] ?? [];
-          } else if (body is List) {
-            list = body;
-          }
-          result.addAll(list.map((e) => OrderModel.fromJson(e)));
+          final list = (body["orders"] ?? body["data"] ?? []) as List;
+          result.addAll(list.map((e) => _parseOrder(e)));
         }
       } catch (e) {
-        print('⚠️ Lỗi khi lấy orders với status $st: $e');
+        print("getTrackingOrders error: $e");
       }
     }
 
     return result;
   }
 
-  Future<OrderModel> getOrderById(String orderId) async {
+  Future<OrderModel> getOrderById(String id) async {
     final token = await AuthToken.getToken();
-    if (token == null || token.isEmpty) {
-      throw Exception('Chưa đăng nhập. Vui lòng đăng nhập lại.');
-    }
+    if (token == null) throw Exception("Token expired");
 
-    final uri = Uri.parse("$baseUrl/$orderId");
+    final url = Uri.parse("$baseUrl/$id");
     final res = await http.get(
-      uri,
+      url,
       headers: {
         "Authorization": "Bearer $token",
         "Content-Type": "application/json",
       },
-    ).timeout(
-      const Duration(seconds: 10),
-      onTimeout: () => throw Exception('Timeout: Không thể kết nối đến server'),
     );
 
     if (res.statusCode == 200) {
       final body = jsonDecode(res.body);
-      final orderData = (body as Map<String, dynamic>)['order'] ?? body['data'] ?? body;
-      return OrderModel.fromJson(orderData);
-    } else {
-      throw Exception('Lỗi tải chi tiết đơn hàng: ${res.statusCode}');
+      return _parseOrder(body["order"] ?? body["data"]);
     }
+
+    throw Exception("Lấy đơn hàng không thành công ${res.statusCode}");
+  }
+
+  /// Chuyển shippingAddress từ String sang Map nếu backend trả về String
+  OrderModel _parseOrder(Map<String, dynamic> json) {
+    var order = OrderModel.fromJson(json);
+
+    if (order.shippingAddress is String) {
+      final parts = (order.shippingAddress as String).split(',');
+      String fullName = parts.isNotEmpty ? parts[0].split(':').last.trim() : '';
+      String phone = parts.length > 1 ? parts[1].split(':').last.trim() : '';
+      String address = parts.length > 2 ? parts[2].split(':').last.trim() : '';
+
+      order = OrderModel(
+        id: order.id,
+        orderCode: order.orderCode,
+        totalPrice: order.totalPrice,
+        status: order.status,
+        createdAt: order.createdAt,
+        items: order.items,
+        shippingAddress: ShippingAddress(fullName: fullName, phone: phone, address: address),
+        shippingFee: order.shippingFee,
+        notes: order.notes,
+      );
+    }
+
+    return order;
   }
 }

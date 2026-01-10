@@ -24,11 +24,11 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | null>(null);
 export const useCart = () => {
   const ctx = useContext(CartContext);
-  if (!ctx) throw new Error("useCart must be used inside CartProvider");
+  if (!ctx) throw new Error("useCart phải nằm bên trong CartProvider");
   return ctx;
 };
 
-// Provider
+// 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cart, setCart] = useState<CartItemType[]>(() => {
     try {
@@ -40,16 +40,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return items.map(item => {
         // Lấy ảnh an toàn
         let img: string;
-        if (item.productImage) img = item.productImage;
+        if (item.productImage) img = item.productImage; // dùng productImage nếu có
         else if (item.primaryImage) img = item.primaryImage;
-        else if (Array.isArray(item.images) && item.images.length > 0) {
-          const first = item.images[0];
+        else if (Array.isArray(item.images) && item.images.length > 0) { 
+          const first = item.images[0]; // lấy ảnh đầu tiên
           img = typeof first === "string" ? first : first.url || "";
         } else img = "";
 
         return {
           productId: item.productId || item._id,
-          variantId: item.variantId || undefined,
+          variantId: item.variantId || undefined, // mặc định undefined nếu không có
           productName: item.productName || item.name || "Unknown",
           price: item.price || 0,
           quantity: item.quantity || 1,
@@ -118,7 +118,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Thêm nhiều sản phẩm
   const addItems = (items: CartItemType[]) => {
     setCart(prev => {
-      const newCart = [...prev];
+      const newCart = [...prev]; // lấy cart trước đó
       items.forEach(item => {
         const exist = newCart.find(i => i.productId === item.productId && i.variantId === item.variantId);
         if (exist) exist.quantity += item.quantity;

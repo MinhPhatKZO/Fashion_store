@@ -10,7 +10,7 @@ interface OrderData {
 }
 
 const MomoCheckout: React.FC = () => {
-  const location = useLocation();
+  const location = useLocation(); // lấy URL hiện tại 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
@@ -75,7 +75,7 @@ const MomoCheckout: React.FC = () => {
     }
 
     try {
-      // === Cập nhật shippingAddress nếu người dùng nhập ===
+      // cập nhật shippingAddress 
       if (fullname || phone || address) {
         const updateRes = await fetch(
           `http://localhost:5000/api/orders/update-shipping/${orderData._id}`,
@@ -111,7 +111,7 @@ const MomoCheckout: React.FC = () => {
       });
 
       const payData = await payRes.json();
-      console.log("📦 MoMo response:", payData);
+      console.log(" MoMo response:", payData);
 
       if (payData.payUrl) {
         window.location.href = payData.payUrl;

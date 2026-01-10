@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { adminAPI } from "../../services/api";
-
+import { adminAPI } from "../../../services/api";
 interface User {
   _id: string;
   name: string;

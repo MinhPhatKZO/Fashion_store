@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Promotion } from "../../types";
-import { adminAPI } from "../../services/api";
+import { adminAPI } from "../../../services/api";
+import { Promotion } from "../../../types";
+
 
 const AdminPromotion: React.FC = () => {
   const [promotions, setPromotions] = useState<Promotion[]>([]);

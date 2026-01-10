@@ -16,9 +16,10 @@ const productSchema = new mongoose.Schema(
 
     subcategoryId: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
 
-    brandId: { type: mongoose.Schema.Types.ObjectId, ref: "Brand" },
+    // 🔴 SỬA TẠI ĐÂY: Đổi brandId -> brand (để khớp với code reviews.js)
+    brand: { type: mongoose.Schema.Types.ObjectId, ref: "Brand" },
 
-    // ✅ Sửa đúng: mỗi sản phẩm thuộc về một người bán (seller)
+    // ✅ Seller giữ nguyên
     seller: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -33,7 +34,12 @@ const productSchema = new mongoose.Schema(
     isFeatured: { type: Boolean, default: false },
     views: { type: Number, default: 0 },
     stock: { type: Number, default: 0 },
+    
+    // Thêm ratings để hỗ trợ tính điểm trung bình sau này (Optional)
+    ratings: { type: Number, default: 0 },
+    numOfReviews: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
+
 module.exports = mongoose.model("Product", productSchema);

@@ -4,7 +4,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.8.0 <4.0.0'
+  sdk: ^3.8.1
 
 dependencies:
   flutter:
@@ -17,31 +17,28 @@ dependencies:
   # API
   http: ^1.2.2
 
-  # Local storage (lưu token)
+  # local storage (lưu token sau login)
   shared_preferences: ^2.3.2
 
-  # Chọn ảnh từ máy
-  image_picker: ^1.0.7
-
-  # Cache ảnh mạng
+  # image
   cached_network_image: ^3.4.1
 
-  # Animation (loading, splash)
+  # animation (dùng cho loading sau này)
   lottie: ^3.1.2
 
-  # Format ngày tháng – tiền tệ
-  intl: ^0.18.1
-
-  # Mở liên kết (MoMo, ZaloPay,...)
-  url_launcher: ^6.1.12
+  # Định dạng ngày tháng và tiền tệ
+  intl: ^0.18.1 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  google_fonts: ^6.2.1 # Hoặc phiên bản mới nhất
 
 flutter:
   uses-material-design: true
 
+  # Assets
   assets:
-    - assets/
+    - assets/products/       # Thư mục chứa ảnh sản phẩm
+    - assets/                # Thư mục chung nếu có thêm hình, icon, background...

@@ -3,52 +3,59 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { Provider, useSelector } from "react-redux";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
+
 import { store, RootState } from "./store";
 import { initializeAuth } from "./store/slices/authSlice";
 import { loadCartFromStorage } from "./store/slices/cartSlice";
-import { CartProvider } from "./context/CartContext";
+import { CartProvider } from "./components/features/cart/CartContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-// Layouts
+/// Layouts
 import AdminLayout from "./components/Layout/AdminLayout";
 import SellerLayout from "./components/Layout/SellerLayout";
 import UserLayout from "./components/Layout/UserLayout";
 
 // Pages
 import Home from "./pages/Home";
-import Products from "./pages/Products";
-import ProductDetail from "./pages/ProductDetail";
-import Cart from "./pages/Cart";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
 import Profile from "./pages/Profile";
-import Orders from "./pages/Orders";
-import OrderDetail from "./pages/OrderDetail";
 import Wishlist from "./pages/Wishlist";
 import NotFound from "./pages/NotFound";
-import VNPayCheckout from "./payment/VNPayCheckout";
-import AdminDashboard from "./pages/admin/Dashboard";
-import AdminPromotion from "./pages/admin/AdminPromotion";
-import AdminSellerStats from "./pages/admin/AdminSellerStats";
-import AdminUserManagement from "./pages/admin/AdminUserManagement";
+
+// Features
+import Products from "./components/features/products/Products";
+import ProductDetail from "./components/features/products/ProductDetail";
+import Cart from "./components/features/cart/Cart";
+
+import Login from "./components/features/auth/Login";
+import Register from "./components/features/auth/Register";
+
+import Orders from "./components/features/order/Orders";
+import OrderDetail from "./components/features/order/OrderDetail";
+
+// Admin
+import AdminPromotion from "./components/features/admin/AdminPromotion";
+import AdminSellerStats from "./components/features/admin/AdminSellerStats";
+import AdminUserManagement from "./components/features/admin/AdminUserManagement";
+
+// Seller
+import SellerDashboard from "./components/features/seller/SellerDashboard";
+import SellerProducts from "./components/features/seller/SellerProducts";
+import SellerOrders from "./components/features/seller/SellerOrders";
+import SellerEditProduct from "./components/features/seller/SellerEditProduct";
+import SellerCreateProduct from "./components/features/seller/SellerCreateProduct";
+import SellerChat from "./components/features/seller/SellerChat"; // <-- 1. Import trang Chat
 
 // Payment
 import CodCheckout from "./payment/CODCheckout";
 import OnlineCheckout from "./payment/OnlineCheckout";
 import MomoCheckout from "./payment/MomoCheckout";
+import VNPayCheckout from "./payment/VNPayCheckout";
 import OrderConfirmation from "./payment/OrderConfirmation";
-
-// Seller Pages
-import SellerDashboard from "./pages/seller/SellerDashboard";
-import SellerProducts from "./pages/seller/SellerProducts";
-import SellerOrders from "./pages/seller/SellerOrders";
-import SellerEditProduct from "./pages/seller/SellerEditProduct";
-import SellerCreateProduct from "./pages/seller/SellerCreateProduct";
 
 const queryClient = new QueryClient();
 
 /* ==========================
-   Login / Register Redirect Components
+   Login / Register Redirect
 ========================== */
 function LoginRedirect() {
   const auth = useSelector((state: RootState) => state.auth);
@@ -74,7 +81,7 @@ function AppContent() {
   return (
     <Router>
       <Routes>
-        {/* Admin Routes */}
+        {/* Admin */}
         <Route
           path="/admin/*"
           element={
@@ -88,7 +95,7 @@ function AppContent() {
           <Route path="statistics" element={<AdminSellerStats />} />
         </Route>
 
-        {/* Seller Routes */}
+        {/* Seller */}
         <Route
           path="/seller/*"
           element={
@@ -102,9 +109,12 @@ function AppContent() {
           <Route path="products/create" element={<SellerCreateProduct />} />
           <Route path="products/edit/:id" element={<SellerEditProduct />} />
           <Route path="orders" element={<SellerOrders />} />
+          
+          {/* --- 2. Thêm Route Chat cho Seller --- */}
+          <Route path="chat" element={<SellerChat />} />
         </Route>
 
-        {/* User/Public Routes */}
+        {/* User */}
         <Route path="/*" element={<UserLayout />}>
           <Route index element={<Home />} />
           <Route path="products" element={<Products />} />
@@ -115,14 +125,14 @@ function AppContent() {
           <Route path="checkout/cod" element={<CodCheckout />} />
           <Route path="checkout/online" element={<OnlineCheckout />} />
           <Route path="checkout/online/momo" element={<MomoCheckout />} />
-          <Route path="order-confirmation" element={<OrderConfirmation />} />
           <Route path="checkout/vnpay" element={<VNPayCheckout />} />
+          <Route path="order-confirmation" element={<OrderConfirmation />} />
 
-          {/* Login/Register Redirect */}
+          {/* Auth */}
           <Route path="login" element={<LoginRedirect />} />
           <Route path="register" element={<RegisterRedirect />} />
 
-          {/* User Protected */}
+          {/* Protected */}
           <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
           <Route path="orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
@@ -144,8 +154,6 @@ function AppContent() {
       </Routes>
 
       <Toaster position="top-right" />
-
-
     </Router>
   );
 }

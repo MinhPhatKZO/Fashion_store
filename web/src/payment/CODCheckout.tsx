@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCart } from "../context/CartContext";
+import { useCart } from "../components/features/cart/CartContext";
 
 interface CartItem {
   productId: string;

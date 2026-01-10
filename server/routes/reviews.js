@@ -2,224 +2,141 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const Review = require('../models/Review');
 const Product = require('../models/Product');
-const Order = require('../models/Order');
+const User = require('../models/User'); 
+const mongoose = require("mongoose");
 const { auth } = require('../middleware/auth');
 
 const router = express.Router();
 
-// @route   GET /api/reviews/product/:productId
-// @desc    Get reviews for a product
-// @access  Public
+// --- LOAD MODEL BRAND (Để hỗ trợ tìm kiếm) ---
+let Brand;
+try {
+    Brand = mongoose.models.Brand || require("../models/Brand");
+} catch (e) {
+    const BrandSchema = new mongoose.Schema({ 
+        userId: mongoose.Schema.Types.ObjectId, 
+        sellerId: mongoose.Schema.Types.ObjectId,
+        name: String
+    }, { strict: false });
+    Brand = mongoose.models.Brand || mongoose.model("Brand", BrandSchema);
+}
+
+// ==================================================================
+// 1. PUBLIC: Lấy danh sách review của 1 sản phẩm
+// ==================================================================
 router.get('/product/:productId', async (req, res) => {
   try {
-    const { page = 1, limit = 10, rating } = req.query;
-    const filter = { product: req.params.productId, isActive: true };
-    
-    if (rating) filter.rating = Number(rating);
-
-    const skip = (page - 1) * limit;
-
-    const reviews = await Review.find(filter)
+    const reviews = await Review.find({ product: req.params.productId, isActive: true })
       .populate('user', 'name avatar')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(Number(limit));
+      .sort({ createdAt: -1 });
+    res.json(reviews);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
-    const total = await Review.countDocuments(filter);
+// ==================================================================
+// 2. PRIVATE: Lấy danh sách review cho Seller Dashboard
+// ==================================================================
+router.get('/seller', auth, async (req, res) => {
+  try {
+    let userId = null;
+    if (req.user) userId = req.user._id || req.user.id;
+    else if (req.userId) userId = req.userId;
 
-    // Get rating statistics
-    const stats = await Review.aggregate([
-      { $match: { product: req.params.productId, isActive: true } },
-      {
-        $group: {
-          _id: '$rating',
-          count: { $sum: 1 }
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    // 1. Lấy thông tin Seller
+    const currentUser = await User.findById(userId);
+    
+    // 🛡️ AUTO-FIX: Nếu User thiếu BrandId thì tự tìm lại (Giữ lại để an toàn)
+    if (currentUser && !currentUser.brandId) {
+        // console.log(`⚠️ Seller chưa có BrandId. Đang tìm lại...`);
+        const myBrand = await Brand.findOne({ 
+            $or: [{ userId: currentUser._id }, { sellerId: currentUser._id }] 
+        });
+        if (myBrand) {
+            currentUser.brandId = myBrand._id;
+            await currentUser.save();
+        } else {
+            // Nếu không có Brand thì không có sản phẩm -> trả về rỗng
+            return res.status(200).json([]);
         }
-      },
-      { $sort: { _id: -1 } }
-    ]);
+    }
 
-    const ratingStats = {
-      5: 0, 4: 0, 3: 0, 2: 0, 1: 0
-    };
+    if (!currentUser || !currentUser.brandId) return res.status(200).json([]);
 
-    stats.forEach(stat => {
-      ratingStats[stat._id] = stat.count;
-    });
+    /* ⚠️ ĐOẠN CODE "VƠ VÉT" SẢN PHẨM ĐÃ ĐƯỢC TẮT ĐỂ AN TOÀN DỮ LIỆU
+       (Chỉ bật lại khi cần sửa lỗi dữ liệu hàng loạt)
+    */
+    // const orphanProducts = await Product.countDocuments({ $or: [{ brand: { $exists: false } }, { brand: null }] });
+    // if (orphanProducts > 0) {
+    //     await Product.updateMany(
+    //         { $or: [{ brand: { $exists: false } }, { brand: null }] },
+    //         { $set: { brand: currentUser.brandId } }
+    //     );
+    // }
 
-    res.json({
-      reviews,
-      ratingStats,
-      pagination: {
-        current: Number(page),
-        pages: Math.ceil(total / limit),
-        total,
-        hasNext: page < Math.ceil(total / limit),
-        hasPrev: page > 1
-      }
-    });
+    // 2. Tìm ID các sản phẩm thuộc Brand này
+    // Lưu ý: Trường trong Product là 'brand', không phải 'brandId'
+    const products = await Product.find({ brand: currentUser.brandId }).select('_id');
+    const productIds = products.map(p => p._id);
+
+    if (productIds.length === 0) {
+        return res.status(200).json([]);
+    }
+
+    // 3. Tìm Review thuộc các sản phẩm đó
+    const reviews = await Review.find({ product: { $in: productIds } })
+      .populate('user', 'name avatar email')
+      .populate('product', 'name images') // Populate để lấy ảnh và tên sp hiển thị
+      .sort({ createdAt: -1 });
+
+    res.json(reviews);
+
   } catch (error) {
-    console.error('Get reviews error:', error);
+    console.error('Get seller reviews error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// @route   POST /api/reviews
-// @desc    Create new review
-// @access  Private
+// ==================================================================
+// 3. PRIVATE: Gửi đánh giá mới (Cho Khách hàng)
+// ==================================================================
 router.post('/', auth, [
-  body('product').isMongoId().withMessage('Valid product ID is required'),
-  body('rating').isInt({ min: 1, max: 5 }).withMessage('Rating must be between 1 and 5'),
-  body('comment').trim().isLength({ min: 1 }).withMessage('Review comment is required')
+  body('product').isMongoId(),
+  body('rating').isInt({ min: 1, max: 5 }),
+  body('comment').trim().isLength({ min: 1 })
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { product, rating, title, comment, images, pros, cons, order } = req.body;
+    let userId = req.user ? (req.user._id || req.user.id) : req.userId;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-    // Check if user already reviewed this product
-    const existingReview = await Review.findOne({ user: req.userId, product });
-    if (existingReview) {
-      return res.status(400).json({ message: 'You have already reviewed this product' });
-    }
+    const { product, rating, comment } = req.body;
+    
+    // Kiểm tra xem đã đánh giá chưa
+    const existing = await Review.findOne({ user: userId, product });
+    if (existing) return res.status(400).json({ message: 'Bạn đã đánh giá sản phẩm này rồi' });
 
-    // Verify order if provided
-    if (order) {
-      const orderExists = await Order.findOne({
-        _id: order,
-        user: req.userId,
-        status: 'delivered',
-        'items.product': product
-      });
-      if (!orderExists) {
-        return res.status(400).json({ message: 'Invalid order or product not delivered' });
-      }
-    }
-
-    const review = new Review({
-      user: req.userId,
-      product,
-      rating,
-      title,
-      comment,
-      images,
-      pros,
-      cons,
-      order,
-      isVerified: !!order
+    const review = new Review({ 
+        user: userId, 
+        product, 
+        rating, 
+        comment, 
+        isActive: true 
     });
-
+    
     await review.save();
+    await review.populate('user', 'name avatar'); // Populate để frontend hiển thị ngay
 
-    await review.populate('user', 'name avatar');
-
-    res.status(201).json({
-      message: 'Review created successfully',
-      review
-    });
+    res.status(201).json({ message: 'Thành công', review });
   } catch (error) {
-    console.error('Create review error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// @route   PUT /api/reviews/:id
-// @desc    Update review
-// @access  Private
-router.put('/:id', auth, [
-  body('rating').optional().isInt({ min: 1, max: 5 }).withMessage('Rating must be between 1 and 5'),
-  body('comment').optional().trim().isLength({ min: 1 }).withMessage('Review comment is required')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const review = await Review.findOne({ _id: req.params.id, user: req.userId });
-    if (!review) {
-      return res.status(404).json({ message: 'Review not found' });
-    }
-
-    const { rating, title, comment, images, pros, cons } = req.body;
-    const updateData = {};
-
-    if (rating) updateData.rating = rating;
-    if (title !== undefined) updateData.title = title;
-    if (comment) updateData.comment = comment;
-    if (images) updateData.images = images;
-    if (pros) updateData.pros = pros;
-    if (cons) updateData.cons = cons;
-
-    Object.assign(review, updateData);
-    await review.save();
-
-    await review.populate('user', 'name avatar');
-
-    res.json({
-      message: 'Review updated successfully',
-      review
-    });
-  } catch (error) {
-    console.error('Update review error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// @route   DELETE /api/reviews/:id
-// @desc    Delete review
-// @access  Private
-router.delete('/:id', auth, async (req, res) => {
-  try {
-    const review = await Review.findOne({ _id: req.params.id, user: req.userId });
-    if (!review) {
-      return res.status(404).json({ message: 'Review not found' });
-    }
-
-    await Review.findByIdAndUpdate(req.params.id, { isActive: false });
-
-    res.json({ message: 'Review deleted successfully' });
-  } catch (error) {
-    console.error('Delete review error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// @route   POST /api/reviews/:id/helpful
-// @desc    Mark review as helpful
-// @access  Private
-router.post('/:id/helpful', auth, async (req, res) => {
-  try {
-    const review = await Review.findById(req.params.id);
-    if (!review) {
-      return res.status(404).json({ message: 'Review not found' });
-    }
-
-    const userIndex = review.helpful.users.indexOf(req.userId);
-    if (userIndex > -1) {
-      // Remove helpful vote
-      review.helpful.users.splice(userIndex, 1);
-      review.helpful.count -= 1;
-    } else {
-      // Add helpful vote
-      review.helpful.users.push(req.userId);
-      review.helpful.count += 1;
-    }
-
-    await review.save();
-
-    res.json({
-      message: 'Helpful vote updated',
-      helpful: review.helpful
-    });
-  } catch (error) {
-    console.error('Helpful vote error:', error);
+    console.error("Post review error:", error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
 module.exports = router;
-

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useCart } from "../context/CartContext"; // dùng hook thay vì trực tiếp CartContext
+import { useCart } from "../cart/CartContext";
 
 interface OrderItem {
   product: {
@@ -30,7 +30,7 @@ const OrderDetail: React.FC = () => {
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
 
-  const { addToCart } = useCart(); // ✅ dùng hook trực tiếp
+  const { addToCart } = useCart(); // dùng hook trực tiếp
 
   useEffect(() => {
     const fetchOrder = async () => {
