@@ -10,9 +10,6 @@ const router = express.Router();
 // 1. HELPER FUNCTIONS
 // ==========================================
 
-/**
- * Chuyển query param thành mảng string sạch sẽ
- */
 const parseQueryToArray = (queryParam) => {
   if (!queryParam) return [];
   if (Array.isArray(queryParam)) return queryParam;
@@ -22,9 +19,6 @@ const parseQueryToArray = (queryParam) => {
   return [];
 };
 
-/**
- * Chuyển mảng string ID thành mảng ObjectId hợp lệ của MongoDB
- */
 const toObjectIds = (arr) => {
   return arr
     .filter((id) => mongoose.Types.ObjectId.isValid(id))
@@ -37,13 +31,12 @@ const toObjectIds = (arr) => {
 
 /**
  * @route   GET /api/products
- * @desc    Lấy danh sách sản phẩm (Filter, Search, Pagination, Sort)
+ * @desc    Lấy TOÀN BỘ danh sách sản phẩm (Bỏ phân trang)
  */
 router.get("/", async (req, res) => {
   try {
     const {
-      page = 1,
-      limit = 12,
+      // page, limit, // ❌ ĐÃ BỎ: Không lấy page và limit từ query nữa
       category,
       brand,
       minPrice,
@@ -52,7 +45,6 @@ router.get("/", async (req, res) => {
       sort,
     } = req.query;
 
-    // Chỉ lấy sản phẩm đang hoạt động
     const query = { isActive: true };
     let sortCriteria = { createdAt: -1 };
 
@@ -70,7 +62,7 @@ router.get("/", async (req, res) => {
     // 3. Lọc theo Brand
     const brandIds = parseQueryToArray(brand);
     if (brandIds.length > 0) {
-      query.brandId = { $in: toObjectIds(brandIds) };
+      query.brand = { $in: toObjectIds(brandIds) };
     }
 
     // 4. Lọc theo Giá
@@ -85,22 +77,22 @@ router.get("/", async (req, res) => {
     else if (sort === "price-desc") sortCriteria = { price: -1 };
     else if (sort === "name-asc") sortCriteria = { name: 1 };
 
-    // 6. Thực thi query
-    const [products, total] = await Promise.all([
-      Product.find(query)
-        .sort(sortCriteria)
-        .skip((page - 1) * limit)
-        .limit(Number(limit))
-        .populate("categoryId", "name slug")
-        .populate("brandId", "name logoUrl country"), // Lấy đủ info brand
-      Product.countDocuments(query),
-    ]);
+    // 6. Thực thi query (LẤY HẾT - KHÔNG LIMIT)
+    const products = await Product.find(query)
+      .sort(sortCriteria)
+      // .skip(...) ❌ ĐÃ BỎ SKIP
+      // .limit(...) ❌ ĐÃ BỎ LIMIT
+      .populate("categoryId", "name slug")
+      .populate("brand", "name logoUrl country");
+
+    const total = products.length;
 
     res.json({
       products,
+      // Trả về pagination giả để Frontend không bị lỗi nếu đang dùng biến này
       pagination: {
-        current: Number(page),
-        pages: Math.ceil(total / limit),
+        current: 1,
+        pages: 1,
         total,
       },
     });
@@ -112,7 +104,7 @@ router.get("/", async (req, res) => {
 
 /**
  * @route   GET /api/products/filters
- * @desc    Lấy dữ liệu để render bộ lọc (Categories & Brands)
+ * @desc    Lấy dữ liệu để render bộ lọc
  */
 router.get("/filters", async (req, res) => {
   try {
@@ -132,14 +124,14 @@ router.get("/filters", async (req, res) => {
 router.get("/featured", async (req, res) => {
   try {
     const products = await Product.find({
-      isFeatured: true, // Phải là nổi bật
-      isActive: true,   // VÀ phải đang hoạt động
+      isFeatured: true,
+      isActive: true,
     })
       .sort({ createdAt: -1 })
-      .limit(8)
+      .limit(8) // Vẫn giữ limit cho Featured để giao diện đẹp
       .populate("categoryId", "name slug")
-      .populate("brandId", "name logoUrl");
-    res.json(products);
+      .populate("brand", "name logoUrl");
+    res.json({ products });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -157,10 +149,11 @@ router.get("/:id", async (req, res) => {
 
     const product = await Product.findOne({ 
         _id: req.params.id, 
-        isActive: true // Quan trọng: Không cho xem sản phẩm đã ẩn
+        isActive: true 
     })
       .populate("categoryId", "name description")
-      .populate("brandId", "name logoUrl country description"); // Lấy chi tiết brand để hiển thị
+      .populate("brand", "name logoUrl country description")
+      .populate("seller", "name avatar");
 
     if (!product) {
       return res.status(404).json({ message: "Sản phẩm không tồn tại hoặc đã bị ẩn" });
@@ -175,32 +168,31 @@ router.get("/:id", async (req, res) => {
 
 /**
  * @route   GET /api/products/related/:id
- * @desc    Lấy sản phẩm liên quan (Cùng Brand trước, sau đó cùng Category)
+ * @desc    Lấy sản phẩm liên quan
  */
 router.get("/related/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const LIMIT = 8;
 
-    const current = await Product.findById(id).select("brandId categoryId isActive");
+    const current = await Product.findById(id).select("brand categoryId isActive");
     if (!current) {
       return res.status(404).json({ message: "Sản phẩm không tồn tại" });
     }
 
     let related = [];
-    // Mảng chứa các ID đã lấy để tránh trùng lặp
     const excludedIds = [new mongoose.Types.ObjectId(id)];
 
     // 1. Ưu tiên cùng Brand
-    if (current.brandId) {
+    if (current.brand) {
       const sameBrand = await Product.find({
         _id: { $ne: id },
         isActive: true,
-        brandId: current.brandId,
+        brand: current.brand,
       })
         .limit(LIMIT)
-        .select("_id name price images description brandId")
-        .populate("brandId", "name")
+        .select("_id name price images description brand")
+        .populate("brand", "name")
         .sort({ createdAt: -1 });
 
       related = [...sameBrand];
@@ -211,13 +203,13 @@ router.get("/related/:id", async (req, res) => {
     if (related.length < LIMIT && current.categoryId) {
       const needed = LIMIT - related.length;
       const sameCategory = await Product.find({
-        _id: { $nin: excludedIds }, // Trừ những cái đã lấy ở trên
+        _id: { $nin: excludedIds },
         isActive: true,
         categoryId: current.categoryId,
       })
         .limit(needed)
-        .select("_id name price images description brandId")
-        .populate("brandId", "name")
+        .select("_id name price images description brand")
+        .populate("brand", "name")
         .sort({ createdAt: -1 });
 
       related = [...related, ...sameCategory];
@@ -250,7 +242,7 @@ router.get("/:id/variants", async (req, res) => {
 
 /**
  * @route   POST /api/products/cart-items
- * @desc    Lấy thông tin chi tiết cho giỏ hàng (từ mảng IDs)
+ * @desc    Lấy thông tin chi tiết cho giỏ hàng
  */
 router.post("/cart-items", async (req, res) => {
   try {
@@ -260,7 +252,7 @@ router.post("/cart-items", async (req, res) => {
       return res.status(200).json({ items: [] });
     }
 
-    const validObjectIds = toObjectIds(productIds); // Sử dụng helper
+    const validObjectIds = toObjectIds(productIds);
 
     if (validObjectIds.length === 0) {
       return res.status(200).json({ items: [] });
@@ -268,10 +260,10 @@ router.post("/cart-items", async (req, res) => {
 
     const products = await Product.find({ 
         _id: { $in: validObjectIds },
-        isActive: true // Chỉ lấy sp còn hoạt động
+        isActive: true 
     })
-      .select("_id name price images stock brandId categoryId")
-      .populate("brandId", "name logoUrl") // Populate logo để hiển thị trong giỏ
+      .select("_id name price images stock brand categoryId")
+      .populate("brand", "name logoUrl")
       .populate("categoryId", "name")
       .lean();
 
