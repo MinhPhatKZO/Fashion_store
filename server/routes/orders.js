@@ -1,342 +1,250 @@
 const express = require("express");
+const router = express.Router();
 const mongoose = require("mongoose");
-const { body, validationResult } = require("express-validator");
-
-const moment = require("moment");
-const qs = require("qs");
-const crypto = require("crypto");
 const Order = require("../models/Order");
 const Product = require("../models/Product");
-const Variant = require("../models/Variants");
+const User = require("../models/User"); // Thêm User model để populate email
 const { auth } = require("../middleware/auth");
+// 👇 Import hàm gửi email
+const { sendOrderEmail } = require("../utils/emailService");
 
-const router = express.Router();
-
-// Hàm lấy userId từ req.user hoặc req.userId
+// Hàm lấy userId an toàn
 const getUserId = (req) => req.user?._id || req.user?.id || req.userId;
 
+/* =======================================================
+   HELPER: Tạo mã đơn hàng (ORD00001)
+======================================================= */
+async function generateOrderNumber() {
+  const lastOrder = await Order.findOne().sort({ createdAt: -1 });
+  if (!lastOrder) return "ORD00001";
+  
+  const lastNum = parseInt(lastOrder.orderNumber.replace("ORD", ""), 10);
+  if (isNaN(lastNum)) return `ORD${Date.now()}`;
 
+  const nextNum = lastNum + 1;
+  return "ORD" + nextNum.toString().padStart(5, "0");
+}
+
+/* =======================================================
+   HELPER: Logic chung để tạo đơn hàng
+======================================================= */
+async function createOrderInDB(req, paymentMethod, status) {
+    const { items, shippingAddress, notes } = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+        throw new Error("Danh sách sản phẩm không hợp lệ");
+    }
+
+    let totalPrice = 0;
+    const orderItems = [];
+    let seller = null;
+
+    // Duyệt qua từng sản phẩm để tính tiền và kiểm tra seller
+    for (const item of items) {
+        // Hỗ trợ cả item.product (Frontend gửi) hoặc item.productId
+        const productId = item.product || item.productId;
+        const product = await Product.findById(productId);
+
+        if (!product) throw new Error(`Sản phẩm ID ${productId} không tồn tại`);
+
+        // Logic: Bắt buộc 1 đơn hàng chỉ thuộc về 1 Seller
+        if (!seller) seller = product.seller;
+        else if (seller.toString() !== product.seller.toString()) {
+            throw new Error("Tất cả sản phẩm trong đơn hàng phải thuộc cùng 1 người bán");
+        }
+
+        const itemTotal = product.price * item.quantity;
+        totalPrice += itemTotal;
+
+        orderItems.push({
+            product: product._id,
+            quantity: item.quantity,
+            price: product.price,
+        });
+    }
+
+    const orderNumber = await generateOrderNumber();
+
+    const order = new Order({
+        user: getUserId(req),
+        seller,
+        items: orderItems,
+        shippingAddress: typeof shippingAddress === "object" ? JSON.stringify(shippingAddress) : shippingAddress,
+        paymentMethod,
+        totalPrice,
+        notes,
+        orderNumber,
+        status: status, // Trạng thái được truyền vào tùy loại thanh toán
+        isPaid: false
+    });
+
+    await order.save();
+
+    // 👇 SAU KHI LƯU DB THÀNH CÔNG -> GỬI EMAIL XÁC NHẬN
+    // Cần lấy lại thông tin user để có email gửi đi
+    try {
+        const fullOrder = await Order.findById(order._id).populate("user", "email name");
+        // Gửi mail (Chạy ngầm, không await để tránh làm chậm response)
+        sendOrderEmail(fullOrder, status).catch(err => 
+            console.error("Gửi email thất bại:", err.message)
+        );
+    } catch (emailErr) {
+        console.error("Lỗi khi chuẩn bị gửi mail:", emailErr);
+    }
+
+    return order;
+}
+
+/* =======================================================
+   1. TẠO ĐƠN VNPAY
+   👉 Chỉ tạo DB status 'Pending_Payment'.
+======================================================= */
 router.post("/vnpay-order", auth, async (req, res) => {
   try {
-    const { items, shippingAddress, paymentMethod, notes } = req.body;
-
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ message: "Danh sách sản phẩm không hợp lệ" });
-    }
-
-    let totalPrice = 0;
-    const orderItems = [];
-    let seller = null;
-
-    for (const item of items) {
-      const product = await Product.findById(item.product);
-      if (!product) return res.status(400).json({ message: "Không tìm thấy sản phẩm" });
-
-      if (!seller) seller = product.seller;
-      else if (seller.toString() !== product.seller.toString())
-        return res.status(400).json({
-          message: "Tất cả sản phẩm phải thuộc cùng 1 người bán",
-        });
-
-      totalPrice += product.price * item.quantity;
-
-      orderItems.push({
-        product: product._id,
-        quantity: item.quantity,
-        price: product.price,
-      });
-    }
-
-    const order = new Order({
-      user: getUserId(req),
-      seller,
-      items: orderItems,
-      shippingAddress:
-        typeof shippingAddress === "object"
-          ? JSON.stringify(shippingAddress)
-          : shippingAddress,
-      paymentMethod,
-      totalPrice,
-      notes,
-      orderNumber: `ORD-${Date.now()}`,
-      status: "pending",
-    });
-
-    await order.save();
-
-    res.status(201).json({ success: true, data: order });
+    const order = await createOrderInDB(req, "VNPay", "Pending_Payment");
+    
+    // Trả về order để frontend lấy ID
+    res.status(201).json({ success: true, data: order, order }); 
   } catch (error) {
-    console.error("Tạo đơn lỗi:", error);
-    res.status(500).json({ message: error.message });
+    console.error("Lỗi tạo đơn VNPay:", error.message);
+    res.status(400).json({ message: error.message });
   }
 });
 
-
+/* =======================================================
+   2. TẠO ĐƠN MOMO
+   👉 Chỉ tạo DB status 'Pending_Payment'.
+======================================================= */
 router.post("/momo-order", auth, async (req, res) => {
   try {
-    const { items, shippingAddress, paymentMethod, notes } = req.body;
-
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res
-        .status(400)
-        .json({ message: "Danh sách sản phẩm không hợp lệ" });
-    }
-
-    let totalPrice = 0;
-    const orderItems = [];
-    let seller = null;
-
-    for (const item of items) {
-      const product = await Product.findById(item.product);
-      if (!product) return res.status(400).json({ message: "Product not found" });
-
-      if (!seller) seller = product.seller;
-      else if (seller.toString() !== product.seller.toString())
-        return res.status(400).json({
-          message: "Tất cả sản phẩm phải thuộc cùng 1 người bán",
-        });
-
-      totalPrice += product.price * item.quantity;
-
-      orderItems.push({
-        product: product._id,
-        quantity: item.quantity,
-        price: product.price,
-      });
-    }
-
-    const order = new Order({
-      user: getUserId(req),
-      seller,
-      items: orderItems,
-      shippingAddress:
-        typeof shippingAddress === "object"
-          ? JSON.stringify(shippingAddress)
-          : shippingAddress,
-      paymentMethod: "momo",
-      totalPrice,
-      notes,
-      orderNumber: `MOMO-${Date.now()}`,
-      status: "pending",
-    });
-
-    await order.save();
-
-    res.status(201).json({ success: true, data: order });
+    const order = await createOrderInDB(req, "MoMo", "Pending_Payment");
+    
+    res.status(201).json({ success: true, data: order, order });
   } catch (error) {
-    console.error("MoMo Create order error:", error);
-    res.status(500).json({ message: error.message });
+    console.error("Lỗi tạo đơn MoMo:", error.message);
+    res.status(400).json({ message: error.message });
   }
 });
 
+/* =======================================================
+   3. TẠO ĐƠN COD
+   👉 Status 'Waiting_Approval' (Chờ duyệt)
+======================================================= */
+router.post("/cod", auth, async (req, res) => {
+  try {
+    // Với COD, trạng thái là Waiting_Approval -> Email sẽ gửi "Đặt hàng thành công"
+    const order = await createOrderInDB(req, "COD", "Waiting_Approval");
 
+    res.status(201).json({ success: true, data: order, order });
+  } catch (error) {
+    console.error("Lỗi tạo đơn COD:", error.message);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+/* =======================================================
+   4. CÁC API KHÁC (GET, UPDATE, DELETE)
+======================================================= */
+
+// Cập nhật địa chỉ
 router.patch("/update-shipping/:id", auth, async (req, res) => {
   try {
-    const orderId = req.params.id;
     const { shippingAddress } = req.body;
+    if (!shippingAddress) return res.status(400).json({ message: "Thiếu địa chỉ" });
 
-    if (!shippingAddress) {
-      return res.status(400).json({ success: false, message: "shippingAddress không được để trống" });
-    }
+    const order = await Order.findOne({ _id: req.params.id, user: getUserId(req) });
+    if (!order) return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
 
-    const order = await Order.findOne({ _id: orderId, user: req.user.id });
-
-    if (!order) {
-      return res.status(404).json({ success: false, message: "Không tìm thấy đơn hàng" });
-    }
-
-    order.shippingAddress = shippingAddress;
+    order.shippingAddress = typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : shippingAddress;
     await order.save();
 
-    res.json({ success: true, message: "Cập nhật địa chỉ giao hàng thành công", order });
+    res.json({ success: true, message: "Cập nhật thành công", order });
   } catch (err) {
-    console.error("UPDATE SHIPPING ERROR:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ message: "Lỗi server" });
   }
 });
 
-// Lấy danh sách đơn hàng của người dùng ( seller)
+// Lấy danh sách đơn hàng
 router.get("/", auth, async (req, res) => {
   try {
     const { page = 1, limit = 10, status } = req.query;
-
     const filter = { user: getUserId(req) };
 
     if (status) filter.status = status;
 
     const skip = (page - 1) * Number(limit);
-
     const orders = await Order.find(filter)
       .populate("items.product", "name images price")
       .populate("seller", "name email")
-      .sort({ createdAt: -1 }) // hiển thị đơn mới nhất trước
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit));
 
     const total = await Order.countDocuments(filter);
-// Đếm tổng số đơn hàng với tổng trang
+
     res.json({
       orders,
       pagination: {
         current: Number(page),
         pages: Math.ceil(total / limit),
         total,
-        hasNext: page < Math.ceil(total / limit),
-        hasPrev: page > 1,
       },
     });
   } catch (error) {
-    console.error("Lấy đơn hàng lỗi:", error);
     res.status(500).json({ message: "Lỗi server" });
   }
 });
 
+// Lấy chi tiết đơn hàng
 router.get("/:id", auth, async (req, res) => {
   try {
-    const order = await Order.findOne({
-      _id: req.params.id,
-      user: getUserId(req),
-    })
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(404).json({ message: "ID đơn hàng không hợp lệ" });
+    }
+
+    const order = await Order.findOne({ _id: req.params.id, user: getUserId(req) })
       .populate("items.product", "name images price")
       .populate("seller", "name email")
       .populate("user", "name email");
 
-    if (!order)
-      return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+    if (!order) return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
 
     res.json({ success: true, order });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Lỗi lấy chi tiết đơn hàng" });
+    res.status(500).json({ message: "Lỗi server" });
   }
 });
 
-// tạo đơn COD
-router.post("/cod", auth, async (req, res) => {
-  try {
-    const { items, shippingAddress } = req.body;
-
-    if (!items?.length)
-      return res.status(400).json({ message: "Giỏ hàng trống" });
-
-    let totalPrice = 0;
-    let seller = null;
-    const orderItems = [];
-
-    for (const item of items) {
-      const product = await Product.findById(item.productId || item.product);
-      if (!product) return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
-
-      if (!seller) seller = product.seller;
-      else if (seller.toString() !== product.seller.toString())
-        return res.status(400).json({
-          message: "Tất cả sản phẩm phải thuộc cùng 1 người bán",
-        });
-
-      totalPrice += product.price * item.quantity;
-
-      orderItems.push({
-        product: product._id,
-        quantity: item.quantity,
-        price: product.price,
-      });
-    }
-
-    const finalOrder = await Order.create({
-      user: getUserId(req),
-      seller,
-      items: orderItems,
-      orderNumber: `ORD-${Date.now()}`,
-      shippingAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : shippingAddress,
-      totalPrice,
-      paymentMethod: "COD",
-      status: "pending",
-    });
-
-    res.json({ success: true, order: finalOrder });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Tạo đơn COD thất bại" });
-  }
-});
-
-// tạo đơn chung 
-router.post("/", auth, async (req, res) => {
-  try {
-    const { items, shippingAddress, paymentMethod, notes } = req.body;
-
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ message: "Danh sách sản phẩm không hợp lệ" });
-    }
-
-    let totalPrice = 0;
-    const orderItems = [];
-    let seller = null;
-
-    for (const item of items) {
-      const product = await Product.findById(item.product);
-
-      if (!product)
-        return res.status(400).json({ message: "Không tìm thấy sản phẩm" });
-
-      const itemTotal = product.price * item.quantity;
-      totalPrice += itemTotal;
-
-      orderItems.push({
-        product: product._id,
-        quantity: item.quantity,
-        price: product.price,
-      });
-    }
-
-    const order = new Order({
-      user: getUserId(req),
-      seller,
-      items: orderItems,
-      shippingAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : shippingAddress,
-      paymentMethod,
-      totalPrice,
-      notes,
-      orderNumber: `ORD-${Date.now()}`,
-    });
-
-    await order.save();
-
-    res.status(201).json({ success: true, data: order });
-  } catch (error) {
-    console.error("Tạo đơn lỗi:", error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
+// Hủy đơn hàng (User tự hủy)
 router.put("/:id/cancel", auth, async (req, res) => {
   try {
     const { reason } = req.body;
+    
+    // 👇 POPULATE USER ĐỂ CÓ EMAIL GỬI ĐI
+    const order = await Order.findOne({ _id: req.params.id, user: getUserId(req) })
+        .populate("user", "email name");
 
-    const order = await Order.findOne({
-      _id: req.params.id,
-      user: getUserId(req),
-    });
+    if (!order) return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
 
-    if (!order) return res.status(404).json({ message: "không tìm thấy đơn hàng" });
-
-    if (!["pending", "unconfirmed"].includes(order.status)) {
-      return res.status(400).json({
-        message: "Không thể huỷ đơn ở trạng thái này",
-      });
+    const allowed = ["pending", "Pending_Payment", "Waiting_Approval"];
+    if (!allowed.includes(order.status)) {
+      return res.status(400).json({ message: "Không thể huỷ đơn hàng ở trạng thái này" });
     }
-    order.status = "cancelled";
-    order.cancelReason = reason || "Cancelled by user";
-    order.cancelledAt = new Date();
+
+    order.status = "Cancelled";
+    order.cancelReason = reason || "Người mua hủy";
 
     await order.save();
 
-    res.json({
-      message: "Huỷ đơn thành công",
-      order,
-    });
+    // 👇 Gửi email xác nhận hủy đơn
+    sendOrderEmail(order, "Cancelled").catch(err => 
+        console.error("Lỗi gửi mail hủy đơn:", err.message)
+    );
+
+    res.json({ message: "Huỷ đơn thành công", order });
   } catch (error) {
-    console.error("Không thể huỷ đơn:", error);
+    console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 });

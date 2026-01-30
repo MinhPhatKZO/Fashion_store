@@ -3,7 +3,7 @@ import '../../services/admin_service.dart';
 import '../../models/admin_statistics.dart';
 
 class LockUnlockAccountScreen extends StatefulWidget {
-  const LockUnlockAccountScreen({Key? key}) : super(key: key);
+  const LockUnlockAccountScreen({super.key});
 
   @override
   State<LockUnlockAccountScreen> createState() => _LockUnlockAccountScreenState();

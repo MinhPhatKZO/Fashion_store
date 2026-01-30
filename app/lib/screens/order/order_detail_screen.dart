@@ -8,7 +8,7 @@ import '../../models/order.dart';
 class OrderDetailScreen extends StatefulWidget {
   final String orderId;
 
-  const OrderDetailScreen({Key? key, required this.orderId}) : super(key: key);
+  const OrderDetailScreen({super.key, required this.orderId});
 
   @override
   State<OrderDetailScreen> createState() => _OrderDetailScreenState();
@@ -239,7 +239,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   _buildSectionHeader("Sản phẩm đã đặt"),
                   const Divider(height: 1, thickness: 1, color: Colors.black12),
                   const SizedBox(height: 8),
-                  ...order!.items.map((e) => _buildProductItem(e)).toList(),
+                  ...order!.items.map((e) => _buildProductItem(e)),
                 ],
               ),
             ),

@@ -3,7 +3,7 @@ import '../../services/admin_service.dart';
 import '../../models/admin_statistics.dart';
 
 class StaffPermissionScreen extends StatefulWidget {
-  const StaffPermissionScreen({Key? key}) : super(key: key);
+  const StaffPermissionScreen({super.key});
 
   @override
   State<StaffPermissionScreen> createState() => _StaffPermissionScreenState();

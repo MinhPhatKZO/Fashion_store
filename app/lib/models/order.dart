@@ -27,7 +27,7 @@ class OrderModel {
   if (rawAddress != null) {
     if (rawAddress is String) {
       final parts = rawAddress.split(',');
-      String fullName = parts.length > 0 ? parts[0].split(':').last.trim() : '';
+      String fullName = parts.isNotEmpty ? parts[0].split(':').last.trim() : '';
       String phone = parts.length > 1 ? parts[1].split(':').last.trim() : '';
       String addr = parts.length > 2 ? parts[2].split(':').last.trim() : '';
       address = ShippingAddress(

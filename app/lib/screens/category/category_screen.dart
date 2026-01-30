@@ -33,7 +33,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
   // Trạng thái cho Sắp xếp và Lọc
   SortOrder _sortOrder = SortOrder.none;
   // Bạn có thể thêm Map cho các bộ lọc phức tạp hơn (e.g., brand, color, size)
-  Map<String, String> _filterParams = {}; 
+  final Map<String, String> _filterParams = {}; 
 
   @override
   void initState() {
@@ -117,7 +117,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   Navigator.pop(context);
                 },
               );
-            }).toList(),
+            }),
           ],
         );
       },

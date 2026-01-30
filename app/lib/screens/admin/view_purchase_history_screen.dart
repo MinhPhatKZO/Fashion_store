@@ -3,7 +3,7 @@ import '../../services/admin_service.dart';
 import '../../models/admin_statistics.dart';
 
 class ViewPurchaseHistoryScreen extends StatefulWidget {
-  const ViewPurchaseHistoryScreen({Key? key}) : super(key: key);
+  const ViewPurchaseHistoryScreen({super.key});
 
   @override
   State<ViewPurchaseHistoryScreen> createState() => _ViewPurchaseHistoryScreenState();

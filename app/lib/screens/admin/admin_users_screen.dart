@@ -4,7 +4,7 @@ import 'lock_unlock_account_screen.dart';
 import 'staff_permission_screen.dart';
 
 class AdminUserScreen extends StatelessWidget {
-  const AdminUserScreen({Key? key}) : super(key: key);
+  const AdminUserScreen({super.key});
 
   final List<_MenuItemData> _menuItems = const [
     _MenuItemData(

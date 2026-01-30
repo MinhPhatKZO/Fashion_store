@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../home_style.dart';
 
 class FeatureItem extends StatelessWidget {
   final IconData icon;

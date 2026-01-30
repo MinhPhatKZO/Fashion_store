@@ -7,7 +7,7 @@ import '../../services/cart_service.dart';
 enum PaymentMethod { cod, momo, vnpay }
 
 class PaymentScreen extends StatefulWidget {
-  const PaymentScreen({Key? key}) : super(key: key);
+  const PaymentScreen({super.key});
 
   @override
   State<PaymentScreen> createState() => _PaymentScreenState();

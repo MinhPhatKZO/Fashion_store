@@ -9,7 +9,7 @@ class ProductListScreen extends StatefulWidget {
   // Yêu cầu bắt buộc phải có đối tượng Category
   final Category category;
 
-  const ProductListScreen({Key? key, required this.category}) : super(key: key);
+  const ProductListScreen({super.key, required this.category});
 
   @override
   State<ProductListScreen> createState() => _ProductListScreenState();

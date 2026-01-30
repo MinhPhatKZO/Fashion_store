@@ -4,6 +4,7 @@ import { useCart } from "./CartContext";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft, CreditCard, Truck } from "lucide-react"; // Thêm icon cho sinh động (tùy chọn)
 
 const Cart: React.FC = () => {
   const { cart, updateQuantity, removeItem, addItems } = useCart();
@@ -55,86 +56,136 @@ const Cart: React.FC = () => {
   };
 
   return (
-    <motion.div className="max-w-7xl mx-auto mt-10 px-4">
-      <h2 className="text-3xl font-bold mb-8 text-gray-800 border-b pb-2">
-       Giỏ hàng của bạn
+    // Container chính: Tăng padding top để tránh header fixed, dùng màu nền trắng sạch
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="max-w-7xl mx-auto pt-28 pb-16 px-4 sm:px-6 lg:px-8"
+    >
+      {/* Tiêu đề phong cách FashionStore: To, Đậm, Tracking chặt */}
+      <h2 className="text-3xl md:text-4xl font-black text-stone-900 mb-8 uppercase tracking-tighter flex items-end gap-3">
+        Giỏ hàng của bạn 
+        <span className="text-xl md:text-2xl font-light text-stone-400 normal-case mb-1">
+          ({totalItems} sản phẩm)
+        </span>
       </h2>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Danh sách sản phẩm */}
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6">
-          <AnimatePresence>
-            {cart.length > 0 ? (
-              cart.map(item => (
-                <CartItem
-                  key={item.productId}
-                  item={item}
-                  onUpdate={updateQuantity}
-                  onRemove={removeItem}
-                />
-              ))
-            ) : (
-              <motion.p
-                className="text-gray-400 text-center py-16 text-lg italic"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                Giỏ hàng trống, hãy thêm sản phẩm 
-              </motion.p>
-            )}
-          </AnimatePresence>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        
+        {/* --- CỘT TRÁI: DANH SÁCH SẢN PHẨM (Chiếm 8 phần) --- */}
+        <div className="lg:col-span-8">
+          <div className="space-y-6"> 
+            <AnimatePresence>
+              {cart.length > 0 ? (
+                cart.map(item => (
+                  // Bọc CartItem trong div border để phân cách rõ ràng
+                  <motion.div 
+                    key={item.productId}
+                    layout
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="border-b border-stone-100 pb-6 last:border-0"
+                  >
+                    <CartItem
+                      item={item}
+                      onUpdate={updateQuantity}
+                      onRemove={removeItem}
+                    />
+                  </motion.div>
+                ))
+              ) : (
+                <motion.div
+                  className="text-center py-20 bg-stone-50 rounded-lg border border-dashed border-stone-200"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <p className="text-stone-500 text-lg mb-4">Giỏ hàng của bạn đang trống.</p>
+                  <button 
+                    onClick={() => navigate('/products')}
+                    className="text-stone-900 font-bold underline hover:text-amber-700 transition-colors"
+                  >
+                    Khám phá sản phẩm ngay
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          
+          {/* Nút Back (Desktop position) */}
+          <button
+            onClick={() => window.history.back()}
+            className="hidden lg:flex items-center gap-2 mt-8 text-stone-500 hover:text-stone-900 font-medium transition-colors group"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            Tiếp tục mua sắm
+          </button>
         </div>
 
-        {/* Tổng tiền + nút */}
-        <div className="bg-gray-50 rounded-2xl shadow-md p-6 flex flex-col justify-between">
-          <div className="mb-6">
-            <p className="text-gray-500 font-medium">
-              Tổng số sản phẩm: {totalItems}
-            </p>
-            <p className="text-2xl font-bold text-green-600 mt-1">
-              Tổng tiền: {total.toLocaleString("vi-VN")} ₫
-            </p>
-          </div>
-
-          <div className="flex flex-col space-y-4">
-            <h3 className="text-xl font-bold text-gray-700 mb-2">
-              Chọn hình thức thanh toán
+        {/* --- CỘT PHẢI: TỔNG TIỀN & THANH TOÁN (Chiếm 4 phần) --- */}
+        <div className="lg:col-span-4">
+          <div className="bg-stone-50 p-6 md:p-8 rounded-xl sticky top-28 border border-stone-100">
+            <h3 className="text-xl font-bold text-stone-900 uppercase tracking-wide mb-6">
+              Tóm tắt đơn hàng
             </h3>
 
-            <button
-              onClick={() => handleCheckoutNavigation("cod")}
-              disabled={cart.length === 0}
-              className={`w-full py-3 text-lg font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-1 hover:shadow-2xl
-                ${
-                  cart.length === 0
-                    ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                    : "bg-indigo-600 text-white shadow-indigo-400/50 hover:bg-indigo-700"
-                }`}
-            >
-              Thanh toán khi nhận hàng (COD)
-            </button>
+            <div className="space-y-4 mb-8 border-b border-stone-200 pb-6">
+              <div className="flex justify-between text-stone-600">
+                <span>Tạm tính</span>
+                <span>{total.toLocaleString("vi-VN")} ₫</span>
+              </div>
+              <div className="flex justify-between text-stone-600">
+                <span>Vận chuyển</span>
+                <span className="text-stone-400 text-sm">Tính ở bước sau</span>
+              </div>
+              <div className="flex justify-between items-center pt-2">
+                <span className="text-lg font-bold text-stone-900">Tổng cộng</span>
+                <span className="text-2xl font-black text-stone-900">
+                  {total.toLocaleString("vi-VN")} ₫
+                </span>
+              </div>
+            </div>
 
-            <button
-              onClick={() => handleCheckoutNavigation("online")}
-              disabled={cart.length === 0}
-              className={`w-full py-3 text-lg font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-1 hover:shadow-2xl
-                ${
-                  cart.length === 0
-                    ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                    : "bg-green-600 text-white shadow-green-400/50 hover:bg-green-700"
-                }`}
-            >
-              Thanh toán Online
-            </button>
+            <div className="flex flex-col space-y-3">
+              {/* Nút Thanh toán Online - Style Đen (Primary) */}
+              <button
+                onClick={() => handleCheckoutNavigation("online")}
+                disabled={cart.length === 0}
+                className={`w-full py-4 px-6 flex items-center justify-center gap-2 text-sm font-bold uppercase tracking-wider rounded-lg transition-all
+                  ${cart.length === 0
+                    ? "bg-stone-200 text-stone-400 cursor-not-allowed"
+                    : "bg-stone-900 text-white hover:bg-black hover:shadow-lg active:transform active:scale-95"
+                  }`}
+              >
+                <CreditCard className="w-4 h-4" />
+                Thanh toán Online
+              </button>
 
+              {/* Nút COD - Style Trắng viền (Secondary) */}
+              <button
+                onClick={() => handleCheckoutNavigation("cod")}
+                disabled={cart.length === 0}
+                className={`w-full py-4 px-6 flex items-center justify-center gap-2 text-sm font-bold uppercase tracking-wider rounded-lg border transition-all
+                  ${cart.length === 0
+                    ? "border-stone-200 text-stone-300 cursor-not-allowed"
+                    : "bg-white border-stone-300 text-stone-900 hover:border-stone-900 hover:bg-stone-50"
+                  }`}
+              >
+                <Truck className="w-4 h-4" />
+                Thanh toán khi nhận hàng
+              </button>
+            </div>
+
+            {/* Nút Back (Mobile position) */}
             <button
               onClick={() => window.history.back()}
-              className="w-full px-6 py-4 bg-gray-100 border-2 border-blue-500 text-blue-600 font-semibold text-lg rounded-xl hover:bg-blue-50 hover:text-blue-700 transition-all shadow-sm hover:shadow-md"
+              className="lg:hidden w-full mt-4 py-3 text-stone-500 font-medium hover:text-stone-900 transition-colors text-sm"
             >
-              Tiếp tục mua sắm
+              Quay lại mua sắm
             </button>
           </div>
         </div>
+
       </div>
     </motion.div>
   );

@@ -4,7 +4,7 @@ import '../../models/cart_item.dart';
 import '../payment/payment_screen.dart'; // Import trang payment
 
 class CartScreen extends StatefulWidget {
-  const CartScreen({Key? key}) : super(key: key);
+  const CartScreen({super.key});
 
   @override
   State<CartScreen> createState() => _CartScreenState();
@@ -379,10 +379,6 @@ class _CartScreenState extends State<CartScreen> {
                                 const SizedBox(width: 16), // Khoảng cách giữa input và button
                                 ElevatedButton(
                                   onPressed: () {},
-                                  child: const Text(
-                                    'Apply', // Đổi text thành Apply
-                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
-                                  ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: _primaryColor,
                                     elevation: 2,
@@ -390,6 +386,10 @@ class _CartScreenState extends State<CartScreen> {
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10), // Bo góc button
                                     ),
+                                  ),
+                                  child: const Text(
+                                    'Apply', // Đổi text thành Apply
+                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
                                   ),
                                 ),
                               ],

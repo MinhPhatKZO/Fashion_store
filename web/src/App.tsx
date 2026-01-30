@@ -20,6 +20,9 @@ import Home from "./pages/Home";
 import Profile from "./pages/Profile";
 import Wishlist from "./pages/Wishlist";
 import NotFound from "./pages/NotFound";
+// 👇 IMPORT 2 TRANG MỚI TẠI ĐÂY
+import ForgotPassword from "./components/features/auth/ForgotPassword";
+import ResetPassword from "./components/features/auth/ResetPassword";
 
 // Features
 import Products from "./components/features/products/Products";
@@ -43,7 +46,7 @@ import SellerProducts from "./components/features/seller/SellerProducts";
 import SellerOrders from "./components/features/seller/SellerOrders";
 import SellerEditProduct from "./components/features/seller/SellerEditProduct";
 import SellerCreateProduct from "./components/features/seller/SellerCreateProduct";
-import SellerChat from "./components/features/seller/SellerChat"; // <-- 1. Import trang Chat
+import SellerChat from "./components/features/seller/SellerChat";
 
 // Payment
 import CodCheckout from "./payment/CODCheckout";
@@ -109,8 +112,6 @@ function AppContent() {
           <Route path="products/create" element={<SellerCreateProduct />} />
           <Route path="products/edit/:id" element={<SellerEditProduct />} />
           <Route path="orders" element={<SellerOrders />} />
-          
-          {/* --- 2. Thêm Route Chat cho Seller --- */}
           <Route path="chat" element={<SellerChat />} />
         </Route>
 
@@ -121,16 +122,22 @@ function AppContent() {
           <Route path="products/:id" element={<ProductDetail />} />
           <Route path="cart" element={<Cart />} />
 
-          {/* Payment */}
+          {/* Payment Routes */}
           <Route path="checkout/cod" element={<CodCheckout />} />
           <Route path="checkout/online" element={<OnlineCheckout />} />
           <Route path="checkout/online/momo" element={<MomoCheckout />} />
           <Route path="checkout/vnpay" element={<VNPayCheckout />} />
+          
+          <Route path="checkout/success" element={<OrderConfirmation />} />
           <Route path="order-confirmation" element={<OrderConfirmation />} />
 
           {/* Auth */}
           <Route path="login" element={<LoginRedirect />} />
           <Route path="register" element={<RegisterRedirect />} />
+          
+          {/* 👇 THÊM 2 ROUTE NÀY VÀO ĐÂY 👇 */}
+          <Route path="forgot-password" element={<ForgotPassword />} />
+          <Route path="reset-password/:token" element={<ResetPassword />} />
 
           {/* Protected */}
           <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

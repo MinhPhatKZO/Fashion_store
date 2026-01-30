@@ -3,7 +3,7 @@ import '../../models/admin_statistics.dart';
 import 'combo_management_screen.dart';
 
 class AdminPromotionScreen extends StatelessWidget {
-  const AdminPromotionScreen({Key? key}) : super(key: key);
+  const AdminPromotionScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

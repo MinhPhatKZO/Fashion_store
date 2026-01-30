@@ -3,7 +3,7 @@ import '../../services/admin_service.dart';
 import '../../models/admin_statistics.dart';
 
 class ComboManagementScreen extends StatefulWidget {
-  const ComboManagementScreen({Key? key}) : super(key: key);
+  const ComboManagementScreen({super.key});
 
   @override
   State<ComboManagementScreen> createState() => _ComboManagementScreenState();

@@ -41,8 +41,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final PageController _pageController = PageController(viewportFraction: 0.48); // roll ngang
   int _currentPage = 0;
   Timer? _autoPlayTimer;
-  bool _autoPlay = true;
-  Duration _autoPlayInterval = const Duration(seconds: 5);
+  final bool _autoPlay = true;
+  final Duration _autoPlayInterval = const Duration(seconds: 5);
 
   @override
   void initState() {

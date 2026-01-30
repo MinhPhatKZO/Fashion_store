@@ -1,13 +1,15 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
-const mongoose = require("mongoose"); // Cần import để dùng Transaction
+const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
 const { OAuth2Client } = require("google-auth-library");
 const axios = require("axios");
+const crypto = require("crypto"); // 👇 Thêm thư viện Crypto
 
 const User = require("../models/User");
 const Brand = require("../models/Brands");
 const { auth, adminAuth } = require("../middleware/auth");
+const { sendOrderEmail } = require("../utils/emailService"); // 👇 Import Email Service
 
 const router = express.Router();
 
@@ -26,7 +28,7 @@ const generateToken = (user) => {
 };
 
 /* ==========================
-   1. REGISTER (USER THƯỜNG - MUA HÀNG)
+   1. REGISTER (USER THƯỜNG)
 ========================== */
 router.post(
   "/register",
@@ -53,7 +55,7 @@ router.post(
         password,
         phone,
         address,
-        role: "user", // Mặc định là người mua
+        role: "user",
       });
 
       await user.save();
@@ -75,7 +77,7 @@ router.post(
 );
 
 /* ==========================
-   2. REGISTER SELLER (TẠO USER + BRAND) - MỚI
+   2. REGISTER SELLER
 ========================== */
 router.post(
   "/register-seller",
@@ -93,15 +95,14 @@ router.post(
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     const { 
-      name, email, password, phone, address, // User info
-      brandName, brandCountry, brandDescription, logoUrl // Brand info
+      name, email, password, phone, address,
+      brandName, brandCountry, brandDescription, logoUrl 
     } = req.body;
 
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-      // 1. Check User Email
       let user = await User.findOne({ email }).session(session);
       if (user) {
         await session.abortTransaction();
@@ -109,19 +110,16 @@ router.post(
         return res.status(400).json({ message: "Email already registered" });
       }
 
-      // 2. Create Seller User
       user = new User({
         name,
         email,
         password,
         phone,
         address,
-        role: "seller", // SET ROLE LÀ SELLER
+        role: "seller",
       });
       await user.save({ session });
 
-      // 3. Create Brand linked to Seller
-      // Kiểm tra tên Brand có bị trùng không (Optional)
       const existingBrand = await Brand.findOne({ name: brandName }).session(session);
       if (existingBrand) {
         await session.abortTransaction();
@@ -134,15 +132,13 @@ router.post(
         country: brandCountry,
         description: brandDescription || "",
         logoUrl: logoUrl || "",
-        sellerId: user._id, // QUAN TRỌNG: Liên kết 1-1
+        sellerId: user._id,
       });
       await brand.save({ session });
 
-      // 4. Commit Transaction
       await session.commitTransaction();
       session.endSession();
 
-      // 5. Generate Token & Response
       const token = generateToken(user);
 
       res.status(201).json({
@@ -168,7 +164,7 @@ router.post(
 );
 
 /* ==========================
-   3. LOGIN (EMAIL/PASS) - CẬP NHẬT LOGIC LẤY BRAND
+   3. LOGIN
 ========================== */
 router.post(
   "/login",
@@ -194,7 +190,6 @@ router.post(
 
       const token = generateToken(user);
 
-      // Chuẩn bị data trả về
       const userResponse = {
         _id: user._id,
         name: user.name,
@@ -205,7 +200,6 @@ router.post(
         avatar: user.avatar,
       };
 
-      // ✅ NẾU LÀ SELLER, TÌM BRAND CỦA HỌ ĐỂ TRẢ VỀ
       if (user.role === "seller") {
         const brand = await Brand.findOne({ sellerId: user._id });
         if (brand) {
@@ -273,7 +267,6 @@ router.post("/google", async (req, res) => {
       avatar: user.avatar,
     };
 
-    // Nếu user GG này là seller, cũng trả về brand info
     if (user.role === "seller") {
       const brand = await Brand.findOne({ sellerId: user._id });
       if (brand) {
@@ -352,15 +345,91 @@ router.post("/facebook", async (req, res) => {
   }
 });
 
+/* ==============================================
+   6. QUÊN MẬT KHẨU (Gửi mail) - MỚI
+============================================== */
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "Email không tồn tại trong hệ thống" });
+    }
+
+    // 1. Tạo token ngẫu nhiên
+    const resetToken = crypto.randomBytes(20).toString("hex");
+
+    // 2. Lưu token vào DB (Hash token để bảo mật - ở đây lưu thẳng cho đơn giản)
+    // Token hết hạn sau 10 phút
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
+
+    await user.save();
+
+    // 3. Tạo Link Reset
+    const resetUrl = `${process.env.WEB_URL}/reset-password/${resetToken}`;
+
+    // 4. Gửi Email
+    // Giả lập data object để tái sử dụng hàm sendOrderEmail
+    const emailData = {
+      user: { name: user.name, email: user.email },
+      resetUrl: resetUrl
+    };
+
+    await sendOrderEmail(emailData, "Reset_Password");
+
+    res.json({ success: true, message: "Đã gửi email hướng dẫn đặt lại mật khẩu!" });
+
+  } catch (error) {
+    console.error("Forgot Password Error:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+});
+
+/* ==============================================
+   7. ĐẶT LẠI MẬT KHẨU MỚI - MỚI
+============================================== */
+router.post("/reset-password/:token", async (req, res) => {
+  try {
+    const resetToken = req.params.token;
+    
+    // Tìm user có token trùng khớp và CHƯA hết hạn
+    const user = await User.findOne({
+      resetPasswordToken: resetToken,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn" });
+    }
+
+    // Đặt mật khẩu mới
+    user.password = req.body.password;
+    
+    // Xóa token
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+
+    // Lưu lại (sẽ kích hoạt pre-save hook để hash password)
+    await user.save();
+
+    res.json({ success: true, message: "Đổi mật khẩu thành công! Bạn có thể đăng nhập ngay." });
+
+  } catch (error) {
+    console.error("Reset Password Error:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+});
+
 /* ==========================
-   6. PROFILE
+   8. PROFILE
 ========================== */
 router.get("/profile", auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
     
-    // Nếu là seller, lấy thêm info Brand để hiển thị profile
     let brandInfo = null;
     if (user.role === 'seller') {
         brandInfo = await Brand.findOne({ sellerId: user._id });
@@ -393,7 +462,7 @@ router.put("/profile", auth, async (req, res) => {
 });
 
 /* ==========================
-   7. ADMIN: GET ALL USERS
+   9. ADMIN: GET ALL USERS
 ========================== */
 router.get("/all", auth, adminAuth, async (req, res) => {
   try {

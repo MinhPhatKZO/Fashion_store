@@ -4,7 +4,7 @@ import 'admin_users_screen.dart';
 import 'admin_promotions_screen.dart';
 
 class AdminScreen extends StatefulWidget {
-  const AdminScreen({Key? key}) : super(key: key);
+  const AdminScreen({super.key});
 
   @override
   State<AdminScreen> createState() => _AdminScreenState();
