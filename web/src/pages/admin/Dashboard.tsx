@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { adminAPI } from "../../../services/api";
-import { User } from "../../../types";
+import { adminAPI } from "../../services/api";
+import { User } from "../../types";
 
 
 const AdminDashboard: React.FC = () => {

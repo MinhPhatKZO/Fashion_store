@@ -9,7 +9,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { adminAPI } from "../../../services/api";
+import { adminAPI } from "../../services/api";
 
 interface SellerRevenue {
   sellerId: string;

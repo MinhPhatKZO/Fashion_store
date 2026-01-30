@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-// Thêm icon Store
-import { ShoppingCart, User, LogOut, ChevronDown, Globe, Store } from "lucide-react";
+// 1. Thêm icon Video
+import { ShoppingCart, User, LogOut, ChevronDown, Globe, Store, Video } from "lucide-react";
 
 // --- CẤU HÌNH API ---
 const API_BASE_URL = "http://localhost:5000";
@@ -41,7 +41,7 @@ const TRANSLATIONS = {
   vi: {
     home: "Trang chủ",
     products: "Sản phẩm",
-    featured: "Nổi bật",
+    livestream: "Livestream", // Đổi key từ featured -> livestream
     orders: "Đơn hàng",
     hotCategories: "DANH MỤC HOT",
     strategicPartners: "ĐỐI TÁC CHIẾN LƯỢC",
@@ -59,7 +59,7 @@ const TRANSLATIONS = {
   en: {
     home: "Home",
     products: "Shop",
-    featured: "Featured",
+    livestream: "Livestream", // Đổi key từ featured -> livestream
     orders: "Orders",
     hotCategories: "HOT CATEGORIES",
     strategicPartners: "STRATEGIC PARTNERS",
@@ -205,7 +205,13 @@ const Header: React.FC = () => {
         items: featuredProducts
       }
     },
-    { name: t.featured, path: "/products?isFeatured=true", type: "link" },
+    // 👇 2. ĐỔI "NỔI BẬT" THÀNH "LIVESTREAM" VỚI ICON
+    { 
+        name: t.livestream, 
+        path: "/livestream", // Đường dẫn tới trang list livestream
+        type: "link",
+        icon: <Video size={18} className="text-red-500 animate-pulse" /> // Icon nhấp nháy
+    },
     { name: t.orders, path: "/orders", type: "link" },
   ];
 
@@ -233,11 +239,16 @@ const Header: React.FC = () => {
               <div key={item.name} className="group h-20 flex items-center">
                 <Link
                   to={item.path}
-                  className="relative flex items-center gap-1 text-stone-600 hover:text-amber-900 font-bold text-base transition-colors tracking-wide py-2"
+                  // 👇 3. Thêm style cho icon nếu có (màu đỏ nếu là livestream)
+                  className={`relative flex items-center gap-1.5 font-bold text-base transition-colors tracking-wide py-2 ${
+                      item.icon ? "text-red-600 hover:text-red-700" : "text-stone-600 hover:text-amber-900"
+                  }`}
                 >
+                  {item.icon && item.icon}
                   {item.name}
                   {item.type === "mega" && <ChevronDown className="w-4 h-4 mt-0.5 group-hover:rotate-180 transition-transform duration-300" />}
-                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-amber-800 transition-all duration-300 group-hover:w-full" />
+                  {/* Underline effect: màu đỏ cho livestream, màu amber cho cái khác */}
+                  <span className={`absolute bottom-0 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full ${item.icon ? "bg-red-600" : "bg-amber-800"}`} />
                 </Link>
 
                 {/* MEGA MENU - (Giữ nguyên code mega menu cũ) */}
@@ -319,8 +330,6 @@ const Header: React.FC = () => {
           {/* Actions Area */}
           <div className="flex items-center gap-4 md:gap-6 pr-10 lg:pr-0"> {/* Thêm padding-right trên mobile để tránh đè nút Seller */}
             
-            {/* Đã XÓA nút Become Seller ở đây */}
-
             {/* Language Switcher */}
             <button 
                 onClick={toggleLanguage}
@@ -370,7 +379,7 @@ const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* ⭐⭐⭐ BECOME SELLER BUTTON - MOVED HERE (ABSOLUTE RIGHT) ⭐⭐⭐ */}
+      {/* BECOME SELLER BUTTON */}
       <Link 
         to="/seller/register" 
         className="absolute right-[10px] top-1/2 -translate-y-1/2 hidden xl:flex items-center gap-1.5 text-stone-500 hover:text-amber-900 transition-colors font-medium text-sm group bg-white/80 p-2 rounded-lg backdrop-blur-sm"

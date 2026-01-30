@@ -20,7 +20,6 @@ import Home from "./pages/Home";
 import Profile from "./pages/Profile";
 import Wishlist from "./pages/Wishlist";
 import NotFound from "./pages/NotFound";
-// 👇 IMPORT 2 TRANG MỚI TẠI ĐÂY
 import ForgotPassword from "./components/features/auth/ForgotPassword";
 import ResetPassword from "./components/features/auth/ResetPassword";
 
@@ -36,17 +35,22 @@ import Orders from "./components/features/order/Orders";
 import OrderDetail from "./components/features/order/OrderDetail";
 
 // Admin
-import AdminPromotion from "./components/features/admin/AdminPromotion";
-import AdminSellerStats from "./components/features/admin/AdminSellerStats";
-import AdminUserManagement from "./components/features/admin/AdminUserManagement";
+import AdminPromotion from "./pages/admin/AdminPromotion";
+import AdminSellerStats from "./pages/admin/AdminSellerStats";
+import AdminUserManagement from "./pages/admin/AdminUserManagement";
 
 // Seller
-import SellerDashboard from "./components/features/seller/SellerDashboard";
-import SellerProducts from "./components/features/seller/SellerProducts";
-import SellerOrders from "./components/features/seller/SellerOrders";
-import SellerEditProduct from "./components/features/seller/SellerEditProduct";
-import SellerCreateProduct from "./components/features/seller/SellerCreateProduct";
-import SellerChat from "./components/features/seller/SellerChat";
+import SellerDashboard from "./pages/seller/SellerDashboard";
+import SellerProducts from "./pages/seller/SellerProducts";
+import SellerOrders from "./pages/seller/SellerOrders";
+import SellerEditProduct from "./pages/seller/SellerEditProduct";
+import SellerCreateProduct from "./pages/seller/SellerCreateProduct";
+import SellerChat from "./pages/seller/SellerChat";
+
+// Livestream Components
+import HostLive from "./pages/seller/Livestream/HostLive"; 
+import ViewerLive from "./pages/Livestream/ViewerLive";
+import LivestreamList from "./pages/Livestream/LivestreamList"; // 👈 1. Import trang danh sách
 
 // Payment
 import CodCheckout from "./payment/CODCheckout";
@@ -113,6 +117,9 @@ function AppContent() {
           <Route path="products/edit/:id" element={<SellerEditProduct />} />
           <Route path="orders" element={<SellerOrders />} />
           <Route path="chat" element={<SellerChat />} />
+          
+          {/* Route cho Seller phát Live */}
+          <Route path="livestream" element={<HostLive />} />
         </Route>
 
         {/* User */}
@@ -135,7 +142,6 @@ function AppContent() {
           <Route path="login" element={<LoginRedirect />} />
           <Route path="register" element={<RegisterRedirect />} />
           
-          {/* 👇 THÊM 2 ROUTE NÀY VÀO ĐÂY 👇 */}
           <Route path="forgot-password" element={<ForgotPassword />} />
           <Route path="reset-password/:token" element={<ResetPassword />} />
 
@@ -144,6 +150,10 @@ function AppContent() {
           <Route path="orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
           <Route path="orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
           <Route path="wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
+
+          {/* 👇 2. CÁC ROUTE LIVESTREAM CHO USER */}
+          <Route path="livestream" element={<LivestreamList />} /> {/* Trang danh sách */}
+          <Route path="livestream/:channelName" element={<ViewerLive />} /> {/* Trang xem chi tiết */}
 
           {/* 404 */}
           <Route path="*" element={<NotFound />} />

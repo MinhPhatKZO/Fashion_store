@@ -11,7 +11,8 @@ import {
   Store,
   ChevronRight,
   Loader2,
-  MessageCircle // 1. Import icon tin nhắn
+  MessageCircle,
+  Video // 1. Import icon Video
 } from "lucide-react";
 
 // --- CONFIG ---
@@ -24,13 +25,14 @@ const getImageUrl = (url: string | undefined) => {
   return `${API_BASE_URL}${url}`;
 };
 
-// --- 2. Thêm item "Tin nhắn" vào NAV_ITEMS ---
+// --- 2. Thêm item "Livestream" vào NAV_ITEMS ---
 const NAV_ITEMS = [
   { label: "Tổng quan", path: "/seller", icon: LayoutDashboard, exact: true },
   { label: "Sản phẩm", path: "/seller/products", icon: Package, exact: true },
   { label: "Thêm sản phẩm", path: "/seller/products/create", icon: PlusCircle, exact: true },
   { label: "Đơn hàng", path: "/seller/orders", icon: ShoppingCart, exact: false },
-  { label: "Tin nhắn", path: "/seller/chat", icon: MessageCircle, exact: true } // <-- MỚI
+  { label: "Tin nhắn", path: "/seller/chat", icon: MessageCircle, exact: true },
+  { label: "Livestream", path: "/seller/livestream", icon: Video, exact: true } // <-- MỚI
 ];
 
 const SellerLayout: React.FC = () => {
@@ -159,11 +161,11 @@ const SellerLayout: React.FC = () => {
         <div className="p-4 border-t border-slate-800 bg-slate-950">
           <div className="flex items-center gap-3 mb-4 px-2">
              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-sm font-bold text-white shadow-md">
-                {sellerInfo?.name?.charAt(0).toUpperCase()}
+               {sellerInfo?.name?.charAt(0).toUpperCase()}
              </div>
              <div className="flex-1 overflow-hidden">
-                <p className="text-sm font-medium text-white truncate">{sellerInfo?.name}</p>
-                <p className="text-xs text-slate-500 truncate">{sellerInfo?.email}</p>
+               <p className="text-sm font-medium text-white truncate">{sellerInfo?.name}</p>
+               <p className="text-xs text-slate-500 truncate">{sellerInfo?.email}</p>
              </div>
           </div>
           <button
