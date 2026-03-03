@@ -110,15 +110,20 @@ app.use('/api/products', require('./routes/products'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/upload', require('./routes/upload'));
-app.use('/api/admin', require('./routes/admin'));
 app.use('/api/brands', require('./routes/brand'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/momo', require('./routes/momo'));
 app.use('/api/vnpay', require('./routes/vnpay'));
+
 app.use('/api/seller/products', require('./routes/seller/sellerProducts'));
 app.use('/api/seller/orders', require('./routes/seller/sellerOrder'));
 app.use('/api/seller', require('./routes/seller/seller'));
 app.use('/api/chat', require('./routes/chat')); 
+
+app.use("/api/admin/users", require("./routes/admin/accountAdmin"));
+app.use("/api/admin/promotions", require("./routes/admin/promotionAdmin"));
+app.use("/api/admin/sellers", require("./routes/admin/sellerAdmin"));
+app.use("/api/admin/stats", require("./routes/admin/statsAdmin"));
 
 // Health Check
 app.get('/health', (req, res) => res.json({ status: 'OK' }));

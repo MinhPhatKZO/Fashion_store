@@ -36,6 +36,8 @@ import OrderDetail from "./components/features/order/OrderDetail";
 import AdminPromotion from "./components/features/admin/AdminPromotion";
 import AdminSellerStats from "./components/features/admin/AdminSellerStats";
 import AdminUserManagement from "./components/features/admin/AdminUserManagement";
+import AdminSupport from "./components/features/admin/AdminSupport";
+import AdminShopManagement from "./components/features/admin/AdminShopManagement";
 
 // Seller
 import SellerDashboard from "./components/features/seller/SellerDashboard";
@@ -90,8 +92,19 @@ function AppContent() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<AdminUserManagement />} />
-          <Route path="promotion" element={<AdminPromotion />} />
+          {/* Dashboard mặc định */}
+          <Route index element={<Navigate to="users" replace />} />
+
+          {/* Core */}
+          <Route path="users" element={<AdminUserManagement />} />
+          <Route path="stats" element={<AdminSellerStats />} />
+          <Route path="support" element={<AdminSupport />} />
+
+          {/* Business */}
+          <Route path="promotions" element={<AdminPromotion />} />
+          <Route path="shops" element={<AdminShopManagement />} />
+
+          {/* Backward compatibility */}
           <Route path="statistics" element={<AdminSellerStats />} />
         </Route>
 

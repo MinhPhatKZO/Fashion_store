@@ -67,6 +67,25 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
+    // QUẢN LÝ SHOP
+    taxCode: { 
+      type: String, 
+      default: "" 
+    },
+    businessLicense: {
+      fileName: { type: String, default: "" },
+      url: { type: String, default: "" },
+      status: { 
+        type: String, 
+        enum: ["none", "pending", "approved", "rejected"], 
+        default: "none" 
+      },
+      uploadedAt: { type: Date }
+    },
+    strikes: { 
+      type: Number, 
+      default: 0 
+    },
     isActive: {
       type: Boolean,
       default: true,

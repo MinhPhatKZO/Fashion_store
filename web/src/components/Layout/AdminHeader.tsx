@@ -1,70 +1,90 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, LogOut } from 'lucide-react';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../../store';
-import { logout } from '../../store/slices/authSlice';
+import React from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import {
+  User,
+  LogOut,
+  Shield,
+  MessageSquareWarning,
+  Tag,
+  Store,
+  BarChart3,
+} from "lucide-react";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "../../store";
+import { logout } from "../../store/slices/authSlice";
 
 const AdminHeader: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
-  const [itemCount, setItemCount] = useState<number>(0);
-
-  useEffect(() => {
-    const storedCart = localStorage.getItem('localCart');
-    if (storedCart) {
-      try {
-        const cart = JSON.parse(storedCart);
-        const totalItems = cart.items
-          ? cart.items.reduce((sum: number, item: any) => sum + item.quantity, 0)
-          : 0;
-        setItemCount(totalItems);
-      } catch {
-        setItemCount(0);
-      }
-    }
-  }, []);
 
   const handleLogout = () => {
+    localStorage.clear();
     dispatch(logout());
-    localStorage.removeItem('localCart');
-    navigate('/login');
+    navigate("/login");
   };
 
+  const navItems = [
+    { name: "Thống kê", path: "/admin/stats", icon: <BarChart3 size={18} /> },
+    { name: "Khiếu nại", path: "/admin/support", icon: <MessageSquareWarning size={18} /> },
+    { name: "Khuyến mãi", path: "/admin/promotions", icon: <Tag size={18} /> },
+    { name: "Quản lý Shop", path: "/admin/shops", icon: <Store size={18} /> },
+  ];
+
   return (
-    <header className="bg-white shadow-md border-b border-gray-100 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto h-20 px-8 flex items-center justify-between">
-        <Link to="/admin" className="text-3xl font-extrabold text-indigo-600 hover:text-indigo-700">
-          Admin Panel
-        </Link>
+    <header className="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b shadow-sm">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="flex justify-between items-center h-20">
 
-        <nav className="hidden md:flex items-center space-x-10 flex-1 justify-center">
-          <Link to="/admin" className="text-gray-700 hover:text-indigo-600 font-medium">
-            Quản lý tài khoản
+          {/* LOGO */}
+          <Link
+            to="/admin"
+            className="flex items-center gap-3 text-2xl font-black text-indigo-700"
+          >
+            <Shield className="w-7 h-7" />
+            Admin<span className="text-indigo-400 font-light">Panel</span>
           </Link>
-          <Link to="/admin/promotion" className="text-gray-700 hover:text-indigo-600 font-medium">
-            Quản lý khuyến mãi
-          </Link>
-          <Link to="/admin/statistics" className="text-gray-700 hover:text-indigo-600 font-medium">
-            Thống kê
-          </Link>
-        </nav>
 
-        {user && (
-          <div className="flex items-center gap-6">
-            <span className="text-gray-700 font-semibold flex items-center gap-2">
-              <User className="h-6 w-6 text-indigo-600" />
-              {user.name}
-            </span>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-sm font-semibold text-red-600 hover:text-red-700"
-            >
-              <LogOut className="h-4 w-4" /> Đăng xuất
-            </button>
-          </div>
-        )}
+          {/* NAV */}
+          <nav className="hidden xl:flex items-center gap-4">
+            {navItems.map((item) => {
+              const active = location.pathname === item.path;
+
+              return (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition
+                    ${
+                      active
+                        ? "bg-indigo-100 text-indigo-700 shadow"
+                        : "text-gray-500 hover:text-indigo-600 hover:bg-gray-100"
+                    }`}
+                >
+                  {item.name}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* USER */}
+          {user && (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <User className="w-5 h-5 text-indigo-600" />
+                <span className="font-semibold">{user.name}</span>
+              </div>
+
+              <button
+                onClick={handleLogout}
+                className="p-2 hover:bg-red-50 rounded-full text-gray-500 hover:text-red-600"
+              >
+                <LogOut />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );
