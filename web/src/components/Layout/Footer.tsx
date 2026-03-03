@@ -9,7 +9,7 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
           <div>
-            <h3 className="text-xl font-bold mb-4">Fashion Store</h3>
+            <h3 className="text-xl font-bold mb-4">KzoneCentral</h3>
             <p className="text-gray-300 mb-4">
               Cửa hàng thời trang hàng đầu với những sản phẩm chất lượng cao và phong cách hiện đại.
             </p>
@@ -96,7 +96,7 @@ const Footer: React.FC = () => {
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="h-5 w-5 text-gray-300" />
-                <span className="text-gray-300">hi@fashionstore.com</span>
+                <span className="text-gray-300">fashionstore@gmail.com</span>
               </div>
             </div>
           </div>
@@ -105,7 +105,7 @@ const Footer: React.FC = () => {
         <div className="border-t border-gray-800 mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-300 text-sm">
-              © 2025 Fashion Store. Tất cả quyền được bảo lưu.
+              © 2026 KZone Central. Tất cả quyền được bảo lưu.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <Link to="/privacy" className="text-gray-300 hover:text-white text-sm transition-colors">

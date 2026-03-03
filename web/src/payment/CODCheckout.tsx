@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCart } from "../components/features/cart/CartContext";
+import { useCart } from "../components/cart/CartContext";
 import { User, Phone, MapPin, Package, ChevronLeft, Truck, CheckCircle, ShoppingBag } from "lucide-react";
 
 interface CartItem {

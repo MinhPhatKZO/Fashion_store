@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, Send, Minus, Loader2, MessageCircle } from "lucide-react";
+import { X, Send, Minus, Loader2, MessageCircle, MoreVertical } from "lucide-react";
 import io from "socket.io-client";
 import axios from "axios";
 
 // --- CONFIG ---
 const API_BASE_URL = "http://localhost:5000";
-// Khởi tạo socket bên ngoài component để tránh kết nối lại liên tục khi re-render
+// Khởi tạo socket bên ngoài component
 const socket = io(API_BASE_URL);
 
 // --- INTERFACES ---
 interface Message {
-  _id?: string; // ID từ MongoDB
+  _id?: string;
   senderId: string;
   text: string;
-  createdAt?: string; // Thời gian từ DB
+  createdAt?: string;
 }
 
 interface ChatBoxProps {
@@ -36,17 +36,14 @@ const ChatBox: React.FC<ChatBoxProps> = ({ brand, currentUser, onClose }) => {
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Room ID chuẩn: UserID - BrandID
   const roomId = currentUser ? `${currentUser._id}-${brand._id}` : "";
 
   // 1. JOIN PHÒNG & TẢI LỊCH SỬ TIN NHẮN
   useEffect(() => {
     if (!currentUser || !roomId) return;
 
-    // A. Join Socket Room
     socket.emit("join_room", roomId);
 
-    // B. Gọi API lấy tin nhắn cũ
     const fetchHistory = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -57,7 +54,6 @@ const ChatBox: React.FC<ChatBoxProps> = ({ brand, currentUser, onClose }) => {
           headers: { Authorization: `Bearer ${token}` }
         });
         
-        // Nếu API trả về mảng tin nhắn, set vào state
         if (Array.isArray(res.data)) {
             setMessages(res.data);
         }
@@ -70,114 +66,122 @@ const ChatBox: React.FC<ChatBoxProps> = ({ brand, currentUser, onClose }) => {
 
     fetchHistory();
 
-    // C. Lắng nghe tin nhắn mới (Real-time)
     const handleReceiveMessage = (data: Message) => {
       setMessages((prev) => [...prev, data]);
     };
 
     socket.on("receive_message", handleReceiveMessage);
 
-    // Cleanup khi đóng chat
     return () => {
       socket.off("receive_message", handleReceiveMessage);
     };
   }, [brand._id, currentUser, roomId]);
 
-  // 2. TỰ ĐỘNG CUỘN XUỐNG CUỐI
+  // 2. SCROLL TO BOTTOM
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isMinimized, loading]);
 
-  // 3. GỬI TIN NHẮN
+  // 3. SEND MESSAGE
   const handleSendMessage = async () => {
     if (newMessage.trim() === "" || !currentUser) return;
 
     const messageData = {
-      roomId: roomId,         // Cần thiết để Backend biết gửi vào phòng nào
+      roomId: roomId,
       senderId: currentUser._id,
       text: newMessage,
       createdAt: new Date().toISOString()
     };
 
-    // Gửi qua Socket
     socket.emit("send_message", messageData);
-
-    // Cập nhật UI ngay lập tức (Optimistic update)
     setMessages((list) => [...list, messageData]);
     setNewMessage("");
   };
 
-  // Nếu chưa đăng nhập thì không hiện chat box (hoặc xử lý khác tùy bạn)
   if (!currentUser) return null;
 
-  // --- GIAO DIỆN KHI THU NHỎ ---
+  // --- GIAO DIỆN KHI THU NHỎ (MINIMIZED) ---
   if (isMinimized) {
     return (
       <div 
-        className="fixed bottom-0 right-4 w-72 bg-white border border-gray-300 shadow-xl rounded-t-lg z-[9999] cursor-pointer flex items-center justify-between p-3 hover:bg-gray-50 transition-all"
+        className="fixed bottom-6 right-6 w-auto bg-white border border-gray-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-full z-[9999] cursor-pointer flex items-center p-2 pr-4 hover:scale-105 transition-all duration-300 animate-fade-in"
         onClick={() => setIsMinimized(false)}
       >
-        <div className="flex items-center gap-2">
-            <div className="relative">
-                <img src={brand.logoUrl} alt={brand.name} className="w-8 h-8 rounded-full border object-contain bg-white" />
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></span>
-            </div>
-            <span className="font-bold text-gray-800 text-sm truncate">{brand.name}</span>
+        <div className="relative mr-3">
+            <img src={brand.logoUrl} alt={brand.name} className="w-10 h-10 rounded-full border border-gray-100 object-contain p-0.5 bg-white" />
+            <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
         </div>
-        <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="p-1 hover:bg-gray-200 rounded-full">
-            <X className="w-4 h-4 text-gray-500" />
+        <div className="flex flex-col">
+            <span className="font-bold text-gray-900 text-sm">{brand.name}</span>
+            <span className="text-[10px] text-green-600 font-medium">Đang trực tuyến</span>
+        </div>
+        <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="ml-4 p-1.5 hover:bg-gray-100 rounded-full transition-colors">
+            <X className="w-4 h-4 text-gray-400" />
         </button>
       </div>
     );
   }
 
-  // --- GIAO DIỆN ĐẦY ĐỦ ---
+  // --- GIAO DIỆN ĐẦY ĐỦ (EXPANDED) ---
   return (
-    <div className="fixed bottom-0 right-4 w-80 md:w-96 h-[500px] bg-white border border-gray-300 shadow-2xl rounded-t-xl z-[9999] flex flex-col overflow-hidden font-sans animate-slide-up">
+    <div className="fixed bottom-4 right-4 w-[360px] h-[520px] bg-white border border-gray-200 shadow-2xl rounded-2xl z-[9999] flex flex-col overflow-hidden font-sans animate-slide-up">
       
-      {/* HEADER */}
-      <div className="bg-blue-600 p-3 flex items-center justify-between text-white shadow-md">
+      {/* HEADER: Clean White Style */}
+      <div className="bg-white p-4 flex items-center justify-between border-b border-gray-100 z-10">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <img src={brand.logoUrl} alt="Logo" className="w-10 h-10 rounded-full bg-white object-contain p-0.5 border-2 border-blue-400" />
-            <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-blue-600 rounded-full"></span>
+            <img src={brand.logoUrl} alt="Logo" className="w-10 h-10 rounded-full bg-gray-50 object-contain p-0.5 border border-gray-200" />
+            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full animate-pulse"></span>
           </div>
           <div>
-            <h3 className="font-bold text-sm leading-tight">{brand.name}</h3>
-            <p className="text-[11px] text-blue-100">Đang hoạt động</p>
+            <h3 className="font-extrabold text-gray-900 text-sm leading-tight flex items-center gap-1">
+                {brand.name}
+                <div className="w-1 h-1 rounded-full bg-blue-500"></div>
+            </h3>
+            <p className="text-[11px] text-gray-500 font-medium">Phản hồi trong vài phút</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
-            <button onClick={() => setIsMinimized(true)} className="p-1.5 hover:bg-blue-700/50 rounded-full transition"><Minus className="w-5 h-5" /></button>
-            <button onClick={onClose} className="p-1.5 hover:bg-blue-700/50 rounded-full transition"><X className="w-5 h-5" /></button>
+            <button onClick={() => setIsMinimized(true)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"><Minus className="w-4 h-4" /></button>
+            <button onClick={onClose} className="p-2 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors text-gray-500"><X className="w-4 h-4" /></button>
         </div>
       </div>
 
-      {/* MESSAGE LIST */}
-      <div className="flex-1 bg-gray-50 p-4 overflow-y-auto space-y-3">
+      {/* MESSAGE LIST: Light Gray Background */}
+      <div className="flex-1 bg-gray-50 p-4 overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
         {loading ? (
             <div className="flex h-full items-center justify-center flex-col text-gray-400 gap-2">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                <span className="text-xs">Đang tải tin nhắn...</span>
+                <Loader2 className="w-6 h-6 animate-spin text-black" />
+                <span className="text-xs font-medium">Đang kết nối...</span>
             </div>
         ) : messages.length === 0 ? (
-            <div className="flex h-full items-center justify-center flex-col text-gray-400 gap-3 opacity-60">
-                <MessageCircle className="w-12 h-12" />
-                <p className="text-sm">Bắt đầu trò chuyện với shop ngay!</p>
+            <div className="flex h-full items-center justify-center flex-col text-gray-400 gap-3 opacity-70">
+                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm">
+                    <MessageCircle className="w-8 h-8 text-gray-300" />
+                </div>
+                <div className="text-center">
+                    <p className="text-sm font-bold text-gray-600">Xin chào!</p>
+                    <p className="text-xs mt-1">Chúng tôi có thể giúp gì cho bạn?</p>
+                </div>
             </div>
         ) : (
             messages.map((msg, index) => {
               const isMe = msg.senderId === currentUser._id;
+              // Grouping logic visual only
+              const isLastFromUser = index === messages.length - 1 || messages[index + 1]?.senderId !== msg.senderId;
+
               return (
-                <div key={index} className={`flex ${isMe ? "justify-end" : "justify-start"} animate-fade-in`}>
-                  {!isMe && (
-                    <img src={brand.logoUrl} className="w-8 h-8 rounded-full mr-2 self-end mb-1 object-contain bg-white border shadow-sm" alt="brand" />
+                <div key={index} className={`flex w-full ${isMe ? "justify-end" : "justify-start"} animate-fade-in`}>
+                  {!isMe && isLastFromUser && (
+                    <img src={brand.logoUrl} className="w-6 h-6 rounded-full mr-2 self-end mb-1 object-contain bg-white border border-gray-200" alt="brand" />
                   )}
+                  {!isMe && !isLastFromUser && <div className="w-8 mr-2" />} 
+
                   <div
-                    className={`max-w-[75%] px-4 py-2 text-sm rounded-2xl shadow-sm leading-relaxed break-words ${
+                    className={`max-w-[75%] px-4 py-2.5 text-sm shadow-sm leading-relaxed break-words ${
                       isMe
-                        ? "bg-blue-600 text-white rounded-br-none"
-                        : "bg-white text-gray-800 border border-gray-200 rounded-bl-none"
+                        ? "bg-black text-white rounded-2xl rounded-br-none" // Style Chat của User (Màu đen)
+                        : "bg-white text-gray-800 border border-gray-100 rounded-2xl rounded-bl-none" // Style Chat của Shop (Màu trắng)
                     }`}
                   >
                     {msg.text}
@@ -189,22 +193,31 @@ const ChatBox: React.FC<ChatBoxProps> = ({ brand, currentUser, onClose }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* INPUT AREA */}
-      <div className="p-3 bg-white border-t border-gray-200">
+      {/* INPUT AREA: Minimalist */}
+      <div className="p-3 bg-white border-t border-gray-100">
         <form
           onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
-          className="flex items-center gap-2 bg-gray-100 rounded-full px-2 py-1 border border-gray-200 focus-within:border-blue-400 focus-within:bg-white transition-all"
+          className="flex items-center gap-2 bg-gray-50 rounded-full px-1.5 py-1.5 border border-transparent focus-within:border-gray-300 focus-within:bg-white focus-within:shadow-sm transition-all duration-300"
         >
+          <button type="button" className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200 transition-colors">
+             <MoreVertical className="w-4 h-4"/>
+          </button>
+          
           <input
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Nhập tin nhắn..."
-            className="flex-1 bg-transparent text-gray-800 text-sm px-3 py-2 outline-none"
+            className="flex-1 bg-transparent text-gray-900 text-sm px-2 py-2 outline-none placeholder:text-gray-400"
           />
+          
           <button
             type="submit"
-            className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            className={`p-2 rounded-full transition-all duration-300 ${
+                newMessage.trim() 
+                ? "bg-black text-white hover:bg-gray-800 hover:scale-105 shadow-md" 
+                : "bg-gray-200 text-gray-400 cursor-not-allowed"
+            }`}
             disabled={!newMessage.trim()}
           >
             <Send className="w-4 h-4" />

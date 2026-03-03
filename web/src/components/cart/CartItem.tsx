@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { CartItemType } from "../cart/CartContext";
+import { CartItemType } from "./CartContext";
 
 // Định nghĩa lại interface CartItemProps
 interface CartItemProps {

@@ -229,7 +229,7 @@ const Header: React.FC = () => {
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center cursor-pointer" onClick={() => navigate('/')}>
             <span className="text-2xl md:text-3xl font-black text-amber-900 tracking-tighter uppercase hover:opacity-80 transition-opacity">
-              Fashion<span className="font-light text-amber-700">Store</span>
+              Kzone<span className="font-light text-amber-700">Central</span>
             </span>
           </div>
 

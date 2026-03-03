@@ -1,128 +1,103 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
-import { ShoppingBag, Heart, Star } from "lucide-react";
+import { Heart, Star, ShoppingBag } from "lucide-react";
 
-interface Image { url: string; alt?: string; isPrimary?: boolean; }
-interface Category { _id: string; name: string; slug: string; }
-interface Rating { average: number; count: number; }
-
-interface Product {
+// --- INTERFACES ---
+export interface Product {
   _id: string;
   name: string;
   price: number;
   originalPrice?: number;
-  images?: (Image | string)[];
-  image?: string;
-  description?: string;
-  category?: Category;
-  rating?: Rating;
-  isFeatured?: boolean;
+  images?: { url: string; alt?: string }[] | string[]; // Hỗ trợ cả 2 kiểu dữ liệu ảnh
+  image?: string; // Fallback cho trường hợp API cũ
+  rating?: { average: number; count: number };
   isOnSale?: boolean;
   discountPercentage?: number;
+  brandId?: string;
+  description?: string;
 }
 
 interface Props {
   product: Product;
+  onClick?: () => void; // 👈 THÊM DÒNG NÀY: Để nhận sự kiện click từ cha
 }
 
-const ProductCard: React.FC<Props> = ({ product }) => {
-  const navigate = useNavigate();
-
-  // Logic lấy ảnh an toàn
-  const getImageUrl = () => {
-    if (product.images && product.images.length > 0) {
-      const first = product.images[0];
-      if (typeof first === "string") return first;
-      if (typeof first === "object") return first.url;
+const ProductCard: React.FC<Props> = ({ product, onClick }) => {
+  // Helper xử lý ảnh an toàn
+  const getImageUrl = (prod: Product): string => {
+    if (prod.images && Array.isArray(prod.images) && prod.images.length > 0) {
+      const firstImg = prod.images[0];
+      return typeof firstImg === "string" ? firstImg : firstImg.url;
     }
-    return product.image || "https://via.placeholder.com/400x500?text=No+Image";
+    if (prod.image) return prod.image;
+    return "https://via.placeholder.com/300x400?text=No+Image";
   };
 
-  // Tính toán % giảm giá nếu API chưa trả về
-  const discount = product.discountPercentage || 
-    (product.originalPrice && product.price < product.originalPrice
-      ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-      : 0);
+  const displayImage = getImageUrl(product);
 
   return (
     <div 
-      className="group flex flex-col gap-3 cursor-pointer"
-      onClick={() => navigate(`/products/${product._id}`)}
+      onClick={onClick} // 👈 Gắn sự kiện click vào div bao ngoài
+      className="group cursor-pointer bg-white rounded-2xl p-3 border border-gray-100 hover:border-gray-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col"
     >
-      {/* --- PHẦN HÌNH ẢNH --- */}
-      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-gray-100">
+      {/* Image Area */}
+      <div className="relative aspect-[3/4] bg-gray-50 rounded-xl overflow-hidden mb-3">
         <img
-          src={getImageUrl()}
+          src={displayImage}
           alt={product.name}
-          className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/300x400?text=Error"; }}
         />
+        
+        {/* Badges */}
+        {product.isOnSale && (
+          <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm">
+            -{product.discountPercentage}%
+          </div>
+        )}
 
-        {/* Badges (Góc trái trên) */}
-        <div className="absolute top-3 left-3 flex flex-col gap-2">
-          {product.isOnSale && (
-            <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide shadow-sm">
-              Sale -{discount}%
-            </span>
-          )}
-          {product.isFeatured && (
-            <span className="bg-black text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide shadow-sm">
-              Hot
-            </span>
-          )}
-        </div>
-
-        {/* Nút yêu thích (Góc phải trên - Hiện khi hover) */}
-        <button 
-          className="absolute top-3 right-3 p-2 rounded-full bg-white/80 hover:bg-white text-gray-600 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0"
-          onClick={(e) => {
-            e.stopPropagation();
-            // Thêm logic wishlist tại đây
-          }}
-        >
-          <Heart className="w-4 h-4" />
-        </button>
-
-        {/* Nút hành động (Trượt từ dưới lên) */}
-        <div className="absolute inset-x-4 bottom-4 translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 ease-out">
-          <button 
-            className="w-full bg-white text-gray-900 py-2.5 rounded-lg font-bold text-sm shadow-lg hover:bg-gray-900 hover:text-white flex items-center justify-center gap-2 transition-colors"
-            onClick={(e) => {
-              e.stopPropagation(); // Ngăn chặn nhảy trang khi bấm nút mua
-              // Thêm logic add to cart
-            }}
-          >
-            <ShoppingBag className="w-4 h-4" /> Thêm nhanh
-          </button>
+        {/* Hover Action Buttons */}
+        <div className="absolute bottom-3 right-3 flex gap-2 translate-y-10 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+            <button 
+                className="bg-white p-2 rounded-full shadow-md hover:bg-black hover:text-white transition-colors"
+                onClick={(e) => { e.stopPropagation(); /* Logic add cart here */ }}
+            >
+                <ShoppingBag className="w-4 h-4" />
+            </button>
+            <button 
+                className="bg-white p-2 rounded-full shadow-md hover:bg-red-50 hover:text-red-500 transition-colors"
+                onClick={(e) => { e.stopPropagation(); /* Logic wishlist here */ }}
+            >
+                <Heart className="w-4 h-4" />
+            </button>
         </div>
       </div>
 
-      {/* --- PHẦN THÔNG TIN --- */}
-      <div className="space-y-1">
-        {/* Tên sản phẩm */}
-        <h3 className="text-sm font-medium text-gray-900 line-clamp-2 min-h-[1.25rem] group-hover:text-blue-600 transition-colors">
+      {/* Info Area */}
+      <div className="space-y-1 flex-1 flex flex-col">
+        <h3 className="text-sm font-bold text-gray-800 line-clamp-2 min-h-[40px] group-hover:text-blue-600 transition-colors">
           {product.name}
         </h3>
-
-        {/* Giá và Đánh giá */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-baseline gap-2">
-            <span className="text-base font-bold text-gray-900">
-              {product.price.toLocaleString("vi-VN")}₫
-            </span>
-            {product.originalPrice && product.originalPrice > product.price && (
-              <span className="text-xs text-gray-400 line-through">
-                {product.originalPrice.toLocaleString("vi-VN")}₫
-              </span>
-            )}
-          </div>
-
-          {/* Rating (Chỉ hiện nếu có) */}
-          {product.rating && product.rating.count > 0 && (
-            <div className="flex items-center gap-1 text-xs text-amber-500">
-              <Star className="w-3 h-3 fill-current" />
-              <span className="text-gray-600 font-medium">{product.rating.average}</span>
+        
+        <div className="mt-auto pt-2">
+            <div className="flex items-center gap-2">
+                <span className="text-base font-extrabold text-gray-900">
+                    {product.price.toLocaleString("vi-VN")}₫
+                </span>
+                {product.originalPrice && product.originalPrice > product.price && (
+                    <span className="text-xs text-gray-400 line-through">
+                        {product.originalPrice.toLocaleString("vi-VN")}₫
+                    </span>
+                )}
             </div>
-          )}
+            
+            {product.rating && (
+                <div className="flex items-center gap-1 mt-1">
+                    <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                    <span className="text-xs text-gray-500 font-medium">
+                        {product.rating.average} ({product.rating.count})
+                    </span>
+                </div>
+            )}
         </div>
       </div>
     </div>

@@ -7,7 +7,7 @@ import { Toaster } from "react-hot-toast";
 import { store, RootState } from "./store";
 import { initializeAuth } from "./store/slices/authSlice";
 import { loadCartFromStorage } from "./store/slices/cartSlice";
-import { CartProvider } from "./components/features/cart/CartContext";
+import { CartProvider } from "./components/cart/CartContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 /// Layouts
@@ -16,23 +16,23 @@ import SellerLayout from "./components/Layout/SellerLayout";
 import UserLayout from "./components/Layout/UserLayout";
 
 // Pages
-import Home from "./pages/Home";
+import Home from "./pages/home/Home";
 import Profile from "./pages/Profile";
 import Wishlist from "./pages/Wishlist";
 import NotFound from "./pages/NotFound";
-import ForgotPassword from "./components/features/auth/ForgotPassword";
-import ResetPassword from "./components/features/auth/ResetPassword";
+import ForgotPassword from "./components/auth/ForgotPassword";
+import ResetPassword from "./components/auth/ResetPassword";
 
 // Features
-import Products from "./components/features/products/Products";
-import ProductDetail from "./components/features/products/ProductDetail";
-import Cart from "./components/features/cart/Cart";
+import Products from "./components/products/Products";
+import ProductDetail from "./components/products/ProductDetail";
+import Cart from "./components/cart/Cart";
 
-import Login from "./components/features/auth/Login";
-import Register from "./components/features/auth/Register";
+import Login from "./components/auth/Login";
+import Register from "./components/auth/Register";
 
-import Orders from "./components/features/order/Orders";
-import OrderDetail from "./components/features/order/OrderDetail";
+import Orders from "./components/order/Orders";
+import OrderDetail from "./components/order/OrderDetail";
 
 // Admin
 import AdminPromotion from "./pages/admin/AdminPromotion";

@@ -25,10 +25,12 @@ const allowedOrigins = [
   process.env.CLIENT_URL
 ].filter(Boolean);
 
+// Cấu hình MỚI
 app.use(cors({
   origin: allowedOrigins,
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
+  // Thêm "PATCH" và "OPTIONS" vào mảng methods
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], 
+  credentials: true 
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

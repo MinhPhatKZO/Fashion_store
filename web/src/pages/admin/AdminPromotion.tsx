@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { adminAPI } from "../../services/api";
+import { adminAPI } from "../../constants/api";
 import { Promotion } from "../../types";
 
 

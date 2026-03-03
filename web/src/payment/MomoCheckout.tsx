@@ -93,6 +93,7 @@ const MomoCheckout: React.FC = () => {
       }
 
       // 2. Tạo URL thanh toán MoMo
+      // ---> ĐÃ SỬA LỖI TẠI ĐÂY: Thêm orderId vào body <---
       const payRes = await fetch("http://localhost:5000/api/momo/payment", {
         method: "POST",
         headers: {
@@ -102,6 +103,7 @@ const MomoCheckout: React.FC = () => {
         body: JSON.stringify({
           amount: orderData?.totalPrice,
           orderInfo: `Thanh toán đơn hàng ${orderData?.orderNumber}`,
+          orderId: orderData?._id // Bổ sung trường này để backend không báo lỗi
         }),
       });
 

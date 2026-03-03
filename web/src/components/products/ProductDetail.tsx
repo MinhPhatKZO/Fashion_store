@@ -120,12 +120,20 @@ const ProductDetail: React.FC = () => {
   }, [id]);
 
   // --- HELPER FUNCTIONS ---
+  // ĐÃ SỬA LỖI TẠI ĐÂY
   const getImageUrl = (p?: Product, index: number = 0) => {
     if (!p || !p.images || p.images.length === 0) return "https://via.placeholder.com/600x800?text=No+Image";
+    
     const img = p.images[index];
-    if (typeof img === "string") return img.startsWith("/") ? img : `/${img}`;
-    if (typeof img === "object" && img.url) return img.url.startsWith("/") ? img.url : `/${img.url}`;
-    return "https://via.placeholder.com/600x800?text=No+Image";
+    const url = typeof img === "string" ? img : img?.url;
+
+    if (!url) return "https://via.placeholder.com/600x800?text=No+Image";
+
+    // Nếu URL đã là link web hoàn chỉnh (Cloudinary, imgur...) thì giữ nguyên
+    if (url.startsWith("http")) return url;
+
+    // Nếu là link nội bộ (assets/...), thêm '/' ở đầu nếu chưa có
+    return url.startsWith("/") ? url : `/${url}`;
   };
 
   // Helper lấy tất cả URL ảnh để render gallery
