@@ -67,7 +67,7 @@ const ProductDetail: React.FC = () => {
   const [userComment, setUserComment] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // --- FETCH DATA (Giữ nguyên logic của bạn) ---
+  // --- FETCH DATA ---
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -75,7 +75,6 @@ const ProductDetail: React.FC = () => {
         const data = await res.json();
         const prod = data.product || data;
         setProduct(prod);
-        // Set ảnh mặc định ban đầu
         if (prod) setMainImage(getImageUrl(prod, 0));
       } catch (error) { console.error("Error loading product", error); }
     };
@@ -119,8 +118,34 @@ const ProductDetail: React.FC = () => {
     fetchReviews();
   }, [id]);
 
+  // 👇 THÊM MỚI TẠI ĐÂY: THEO DÕI LƯỢT XEM SẢN PHẨM 👇
+  useEffect(() => {
+    const trackProductView = async () => {
+      const token = localStorage.getItem("token");
+      if (!token || !id) return; // Chỉ lưu nếu user đã đăng nhập
+
+      try {
+        await fetch("http://localhost:5000/api/interactions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            productId: id,
+            action: "view"
+          })
+        });
+      } catch (error) {
+        console.error("Lỗi ghi nhận lịch sử xem:", error);
+      }
+    };
+
+    trackProductView();
+  }, [id]);
+  // 👆 KẾT THÚC THÊM MỚI 👆
+
   // --- HELPER FUNCTIONS ---
-  // ĐÃ SỬA LỖI TẠI ĐÂY
   const getImageUrl = (p?: Product, index: number = 0) => {
     if (!p || !p.images || p.images.length === 0) return "https://via.placeholder.com/600x800?text=No+Image";
     
@@ -128,15 +153,10 @@ const ProductDetail: React.FC = () => {
     const url = typeof img === "string" ? img : img?.url;
 
     if (!url) return "https://via.placeholder.com/600x800?text=No+Image";
-
-    // Nếu URL đã là link web hoàn chỉnh (Cloudinary, imgur...) thì giữ nguyên
     if (url.startsWith("http")) return url;
-
-    // Nếu là link nội bộ (assets/...), thêm '/' ở đầu nếu chưa có
     return url.startsWith("/") ? url : `/${url}`;
   };
 
-  // Helper lấy tất cả URL ảnh để render gallery
   const getAllImages = useMemo(() => {
     if (!product || !product.images) return [];
     return product.images.map((_, idx) => getImageUrl(product, idx));
@@ -185,20 +205,35 @@ const ProductDetail: React.FC = () => {
       productImage: mainImage || getImageUrl(product),
     }, quantity);
     alert("Đã thêm vào giỏ hàng!");
+
+    // 👇 THÊM MỚI TẠI ĐÂY: THEO DÕI LƯỢT THÊM VÀO GIỎ HÀNG 👇
+    const token = localStorage.getItem("token");
+    if (token && product._id) {
+      fetch("http://localhost:5000/api/interactions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          productId: product._id,
+          action: "cart"
+        })
+      }).catch(err => console.log(err));
+    }
+    // 👆 KẾT THÚC THÊM MỚI 👆
   };
 
-const handleSubmitReview = async (e: React.FormEvent) => {
+  const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
     
-    // --- SỬA LỖI TẠI ĐÂY ---
     if (!token) {
         if(window.confirm("Bạn cần đăng nhập để đánh giá. Đi tới trang đăng nhập?")) {
             navigate("/login");
         }
         return;
     }
-    // -----------------------
 
     if (!userComment.trim()) return alert("Vui lòng nhập nội dung!");
 

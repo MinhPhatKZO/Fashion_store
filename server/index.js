@@ -10,6 +10,8 @@ const connectDB = require('./config/db');
 const Conversation = require('./models/Conversation');
 const Message = require('./models/Message');
 const Livestream = require('./models/Livestream');
+const interactionRoutes = require('./routes/interactions');
+const recommendationRoutes = require('./routes/recommendations');
 
 // Kết nối Database
 connectDB();
@@ -185,6 +187,9 @@ app.use("/api/admin/promotions", require("./routes/admin/promotionAdmin"));
 app.use("/api/admin/sellers", require("./routes/admin/sellerAdmin"));
 app.use("/api/admin/stats", require("./routes/admin/statsAdmin"));
 
+// AI 
+app.use('/api/interactions', interactionRoutes);
+app.use('/api/recommendations', recommendationRoutes);
 
 app.get('/', (req, res) => res.send('API is running...'));
 

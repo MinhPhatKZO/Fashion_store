@@ -1,7 +1,7 @@
 import React from "react";
 import { MessageCircle, ShieldCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
-import ProductCard from "../../../components/ProductCard/ProductCard";
+import ProductCard from "../../../components/products/ProductCard";
 import { Brand, Product, getBrandTheme } from "../../../utils/homeUtils";
 
 interface Props {

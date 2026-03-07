@@ -9,6 +9,8 @@ import HomePolicies from "./components/HomePolicies";
 import HomeFlashSale from "./components/HomeFlashSale";
 import HomeBrands from "./components/HomeBrands";
 import HomeBrandStores from "./components/HomeBrandStores";
+// 👇 BƯỚC QUAN TRỌNG: Import component Gợi ý AI mới 👇
+import RecommendationSection from "./components/RecommendationSection"; 
 
 // Import Utils
 import { 
@@ -22,13 +24,15 @@ import {
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  // State
+  
+  // States cơ bản
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Chat state
+  // States cho AI & Chat
+  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
   const [activeChatBrand, setActiveChatBrand] = useState<Brand | null>(null);
   const [currentUser, setCurrentUser] = useState<{_id: string, name: string} | null>(null);
 
@@ -40,24 +44,42 @@ const Home: React.FC = () => {
       if(token && userId && userName) setCurrentUser({ _id: userId, name: userName });
   }, []);
 
-  // 2. Fetch Data
+  // 2. Fetch Data (An toàn, không bị lỗi khi chưa đăng nhập)
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const results = await Promise.allSettled([
+        const token = localStorage.getItem("token");
+
+        // Chuẩn bị danh sách API cần gọi
+        const requests = [
           axios.get(`${API_BASE_URL}/api/products/featured`),
           axios.get(`${API_BASE_URL}/api/brands`),
           axios.get(`${API_BASE_URL}/api/products`),
-        ]);
+        ];
 
-        const getData = (result: PromiseSettledResult<any>) => 
-            (result.status === 'fulfilled' && result.value) ? result.value.data : [];
+        // Nếu đã đăng nhập thì mới gọi thêm API lấy gợi ý AI
+        let aiRequestIndex = -1;
+        if (token) {
+          requests.push(axios.get(`${API_BASE_URL}/api/recommendations`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }));
+          aiRequestIndex = requests.length - 1; // Lưu lại vị trí của API AI
+        }
 
-        const rawFeatured = getData(results[0]);
-        const rawBrands = getData(results[1]);
-        const rawProducts = getData(results[2]);
+        const results = await Promise.allSettled(requests);
 
+        // Hàm bóc tách dữ liệu an toàn
+        const getData = (index: number) => {
+           const res = results[index];
+           return (res && res.status === 'fulfilled' && res.value) ? res.value.data : null;
+        };
+
+        const rawFeatured = getData(0);
+        const rawBrands = getData(1);
+        const rawProducts = getData(2);
+
+        // Chuẩn hóa dữ liệu
         const normalizeProducts = (data: any): Product[] => {
           if (!data || !Array.isArray(data)) return [];
           return data.map((p: any) => ({
@@ -77,13 +99,17 @@ const Home: React.FC = () => {
           }));
         };
 
-        const safeFeatured = Array.isArray(rawFeatured) ? rawFeatured : (rawFeatured?.products || []);
-        const safeBrands = Array.isArray(rawBrands) ? rawBrands : [];
-        const safeProducts = Array.isArray(rawProducts) ? rawProducts : (rawProducts?.products || []);
+        setFeaturedProducts(normalizeProducts(rawFeatured?.products || rawFeatured));
+        setBrands(normalizeBrands(rawBrands));
+        setAllProducts(normalizeProducts(rawProducts?.products || rawProducts));
 
-        setFeaturedProducts(normalizeProducts(safeFeatured));
-        setBrands(normalizeBrands(safeBrands));
-        setAllProducts(normalizeProducts(safeProducts));
+        // Xử lý riêng dữ liệu AI nếu có gọi API
+        if (aiRequestIndex !== -1) {
+            const rawAI = getData(aiRequestIndex);
+            if (rawAI && rawAI.success) {
+                setRecommendedProducts(normalizeProducts(rawAI.products));
+            }
+        }
 
       } catch (err) {
         console.error("Lỗi hệ thống:", err);
@@ -103,7 +129,11 @@ const Home: React.FC = () => {
     setActiveChatBrand(brand);
   };
 
-  if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50"><div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div></div>;
+  if (loading) return (
+    <div className="h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen font-sans text-gray-800 bg-slate-100 pb-24 relative overflow-hidden">
@@ -121,7 +151,11 @@ const Home: React.FC = () => {
         <HomeHero />
         <HomePolicies />
         
+        {/* Đưa Flash Sale lên ngay dưới Banner và Policies */}
         {featuredProducts?.length > 0 && <HomeFlashSale products={featuredProducts} />}
+
+        {/* 🤖 MỤC GỢI Ý AI ĐƯỢC ĐẨY XUỐNG DƯỚI FLASH SALE */}
+        <RecommendationSection products={recommendedProducts} />
         
         {brands?.length > 0 && <HomeBrands brands={brands} />}
         

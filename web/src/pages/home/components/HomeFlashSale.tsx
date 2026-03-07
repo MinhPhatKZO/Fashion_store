@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Slider from "react-slick";
 import { Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
-import ProductCard from "../../../components/ProductCard/ProductCard"; 
+import ProductCard from "../../../components/products/ProductCard"; 
 import { Product } from "../../../utils/homeUtils"; 
 
 // --- SUB COMPONENT: TIMER (Giữ nguyên) ---
