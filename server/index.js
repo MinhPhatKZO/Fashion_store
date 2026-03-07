@@ -166,7 +166,6 @@ io.on("connection", (socket) => {
 // ==================== REST API ROUTES ====================
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
-app.use('/api/admin', require('./routes/admin'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/products', require('./routes/products'));
@@ -180,6 +179,12 @@ app.use('/api/seller/products', require('./routes/seller/sellerProducts'));
 app.use('/api/seller/orders', require('./routes/seller/sellerOrder'));
 app.use('/api/chat', require('./routes/chat')); 
 app.use('/api/livestreams', require('./routes/livestream'));
+
+app.use("/api/admin/users", require("./routes/admin/accountAdmin"));
+app.use("/api/admin/promotions", require("./routes/admin/promotionAdmin"));
+app.use("/api/admin/sellers", require("./routes/admin/sellerAdmin"));
+app.use("/api/admin/stats", require("./routes/admin/statsAdmin"));
+
 
 app.get('/', (req, res) => res.send('API is running...'));
 

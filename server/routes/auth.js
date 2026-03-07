@@ -226,15 +226,13 @@ router.post(
 ========================== */
 router.post("/google", async (req, res) => {
   try {
-    const { credential } = req.body;
-    if (!credential) return res.status(400).json({ message: "Missing Google credential" });
+    // Nhận thông tin user thay vì credential token
+    const { email, name, sub: googleId, picture } = req.body;
 
-    const ticket = await googleClient.verifyIdToken({
-      idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
+    if (!email) {
+      return res.status(400).json({ message: "Không lấy được thông tin từ Google" });
+    }
 
-    const { email, name, picture, sub } = ticket.getPayload();
     let user = await User.findOne({ email });
 
     if (!user) {
@@ -242,13 +240,13 @@ router.post("/google", async (req, res) => {
         name,
         email,
         avatar: picture,
-        googleId: sub,
+        googleId,
         role: "user",
-        password: null,
+        password: null, 
       });
       await user.save();
     } else if (!user.googleId) {
-      user.googleId = sub;
+      user.googleId = googleId;
       user.avatar = picture || user.avatar;
       await user.save();
     }

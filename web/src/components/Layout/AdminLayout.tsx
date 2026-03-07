@@ -1,7 +1,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import AdminHeader from './AdminHeader';
-import Footer from './Footer';
 
 const AdminLayout: React.FC = () => {
   return (
@@ -10,7 +9,6 @@ const AdminLayout: React.FC = () => {
       <main className="flex-1">
         <Outlet />
       </main>
-      <Footer />                       
     </div>
   );
 };

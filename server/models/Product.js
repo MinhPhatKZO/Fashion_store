@@ -38,6 +38,10 @@ const productSchema = new mongoose.Schema(
     // Thêm ratings để hỗ trợ tính điểm trung bình sau này (Optional)
     ratings: { type: Number, default: 0 },
     numOfReviews: { type: Number, default: 0 },
+
+    // hàng chờ duyệt/đã lên sàn.
+    isApproved: { type: Boolean, default: false }, // Mặc định chưa duyệt
+    reasonRejected: { type: String }, // Lý do từ chối (nếu có)
   },
   { timestamps: true }
 );

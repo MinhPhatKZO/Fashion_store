@@ -1,7 +1,6 @@
 import React, { useState, ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-// 👇 Import thêm useGoogleLogin để tạo nút Google tùy chỉnh
 import { useGoogleLogin } from "@react-oauth/google"; 
 import FacebookLogin from "@greatsumini/react-facebook-login";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
@@ -67,35 +66,36 @@ export default function Login() {
     }
   };
 
-  // 👇 Xử lý Google Login (Dùng Hook)
+  // 👇 SỬA LẠI: Lấy thông tin user từ Google bằng access_token
   const loginGoogle = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
-        // Token này dùng để xác thực, bạn có thể gửi thẳng credential về BE 
-        // hoặc gọi Google API để lấy info rồi gửi về BE.
-        // Ở đây giả lập gửi token về BE như cũ (Lưu ý: BE cần điều chỉnh để nhận access_token nếu cần)
-        // Tuy nhiên để đơn giản, ta giữ nguyên logic gọi API BE:
-        handleGoogleAuthApi(tokenResponse.access_token); 
+      try {
+        // Fetch user info từ Google
+        const userInfoRes = await fetch(
+          "https://www.googleapis.com/oauth2/v3/userinfo",
+          {
+            headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+          }
+        );
+        const userInfo = await userInfoRes.json();
+        
+        // Truyền userInfo xuống backend
+        handleGoogleAuthApi(userInfo);
+      } catch (err) {
+        setMessage({ text: "Lỗi lấy dữ liệu từ Google", type: "error" });
+      }
     },
     onError: () => setMessage({ text: "Lỗi Google Login", type: "error" }),
   });
 
-  const handleGoogleAuthApi = async (accessToken: string) => {
-      // Lưu ý: Nếu BE của bạn đang chờ "credential" (JWT) từ Google Button cũ, 
-      // bạn có thể cần sửa BE để nhận accessToken và gọi Google UserInfo.
-      // Nhưng nếu bạn muốn giữ BE cũ, bạn cần dùng lại GoogleLogin Component cũ.
-      // Dưới đây là giả định BE hỗ trợ hoặc bạn chấp nhận dùng nút Custom.
-      
-      // TẠM THỜI: Để code chạy mượt với UI Custom, ta giả lập gọi API
-      // Nếu BE cần JWT, việc custom nút Google hơi phức tạp hơn chút. 
-      // Nhưng để đúng "Tone đen xám" và "Animation", đây là cách tốt nhất.
-      
-      // Demo logic gửi token:
+  // 👇 SỬA LẠI: Gửi userInfo xuống Backend
+  const handleGoogleAuthApi = async (userInfo: any) => {
       try {
-        // Lưu ý: Sửa lại body tùy theo BE nhận gì (credential hay access_token)
         const res = await fetch("http://localhost:5000/api/auth/google", { 
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ credential: accessToken }), // BE cần xử lý
+            // Truyền cục dữ liệu user của Google xuống BE
+            body: JSON.stringify(userInfo), 
         });
         const data = await res.json();
         if (res.ok) handleAuthSuccess(data);
