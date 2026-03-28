@@ -14,28 +14,33 @@ class _StaffPermissionScreenState extends State<StaffPermissionScreen> {
   bool _loading = false;
   List<UserModel> _users = [];
 
-  // Danh sách role động từ dữ liệu server
-  Set<String> _roles = {};
-
+  // Danh sách role mặc định cộng thêm các role động từ server
+final Set<String> _roles = {'user', 'admin', 'seller'};
   Future<void> _loadUsers() async {
     setState(() => _loading = true);
     try {
       _users = await _service.getUsers();
-      // Lấy tất cả role duy nhất từ users
-      _roles = _users.map((u) => u.role).toSet();
+      // Bổ sung thêm các role từ server nếu có role nào lạ
+      _roles.addAll(_users.map((u) => u.role).toSet());
     } catch (e) {
+      if (!mounted) return; // Thêm check mounted
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
-      setState(() => _loading = false);
+      if (mounted) { // Thêm check mounted
+        setState(() => _loading = false);
+      }
     }
   }
 
   Future<void> _changeRole(String userId, String newRole) async {
     try {
       await _service.updateUserRole(userId, newRole);
+      
+      if (!mounted) return; // Thêm check mounted
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Role updated')));
+          
       setState(() {
         // Cập nhật role local ngay lập tức
         final user = _users.firstWhere((u) => u.id == userId);
@@ -44,6 +49,7 @@ class _StaffPermissionScreenState extends State<StaffPermissionScreen> {
         _roles.add(newRole);
       });
     } catch (e) {
+      if (!mounted) return; // Thêm check mounted
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Error: $e')));
     }
@@ -75,7 +81,7 @@ class _StaffPermissionScreenState extends State<StaffPermissionScreen> {
                         title: Text(u.name),
                         subtitle: Text('${u.email} • role: ${u.role}'),
                         trailing: DropdownButton<String>(
-                          value: u.role,
+                          value: _roles.contains(u.role) ? u.role : null, // Tránh lỗi giá trị không nằm trong danh sách
                           items: _roles
                               .map((r) =>
                                   DropdownMenuItem(value: r, child: Text(r)))

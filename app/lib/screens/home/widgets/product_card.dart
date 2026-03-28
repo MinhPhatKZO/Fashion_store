@@ -1,19 +1,38 @@
 import 'package:flutter/material.dart';
-import '../home_style.dart';
+
+// 👇 Sửa đường dẫn để trỏ đúng tới thư mục chứa file product.dart
 import '../../../models/product.dart';
 
 class ProductCard extends StatelessWidget {
   final Product product;
   final VoidCallback? onTap;
 
+  // 👇 Đã sửa lỗi đánh máy this.this.onTap thành this.onTap
   const ProductCard({super.key, required this.product, this.onTap});
 
+  // 👇 Khai báo bộ màu thương hiệu KZONE Central
+  static const Color kzoneBrown = Color(0xFF8B4513);
+  static const Color kzoneOrange = Color(0xFFA0522D);
+  static const Color kzoneBeige = Color(0xFFFAF7F2);
+
+  // 👇 Khai báo biến kCardRadius trực tiếp ở đây
+  static const double kCardRadius = 16.0;
+
   BorderRadius get _cardBorderRadius => BorderRadius.circular(kCardRadius);
+
+  // 👇 Hàm định dạng tiền VNĐ (VD: 1000000 -> 1.000.000₫)
+  String _formatCurrency(double price) {
+    String priceStr = price.toStringAsFixed(0);
+    priceStr = priceStr.replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.');
+    return '$priceStr₫';
+  }
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      elevation: 2,
+      elevation: 3,
+      shadowColor: kzoneBrown.withValues(alpha: 0.1), // Đổ bóng màu nâu nhạt
       borderRadius: _cardBorderRadius,
       color: Colors.white,
       child: InkWell(
@@ -45,8 +64,9 @@ class ProductCard extends StatelessWidget {
   Widget _buildMainImage() {
     return Container(
       height: 160,
+      width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFFE3F2FD),
+        color: kzoneBeige, // Đổi màu nền chờ thành màu Beige
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(kCardRadius),
         ),
@@ -65,7 +85,6 @@ class ProductCard extends StatelessWidget {
       return _buildPlaceholder();
     }
 
-    // Check if network image or asset
     final isNetworkImage = product.displayImage.startsWith('http');
 
     return isNetworkImage
@@ -75,11 +94,10 @@ class ProductCard extends StatelessWidget {
             width: double.infinity,
             fit: BoxFit.cover,
             loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) {
-                return child;
-              }
+              if (loadingProgress == null) return child;
               return Center(
                 child: CircularProgressIndicator(
+                  color: kzoneBrown, // Đổi màu loading
                   value: loadingProgress.expectedTotalBytes != null
                       ? loadingProgress.cumulativeBytesLoaded /
                           loadingProgress.expectedTotalBytes!
@@ -99,21 +117,19 @@ class ProductCard extends StatelessWidget {
   }
 
   Widget _buildPlaceholder() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.image_not_supported,
-            size: 40,
-            color: Colors.grey,
-          ),
-          SizedBox(height: 4),
+          Icon(Icons.shopping_bag_outlined, size: 40, color: kzoneBrown.withValues(alpha: 0.5)),
+          const SizedBox(height: 4),
           Text(
-            'No Image',
+            'KZONE',
             style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey,
+              fontSize: 10, 
+              color: kzoneBrown.withValues(alpha: 0.5),
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1
             ),
           ),
         ],
@@ -128,15 +144,16 @@ class ProductCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.red,
+          color: kzoneOrange, // Màu Nâu Cam nổi bật
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Text(
-          'HOT',
+          'MỚI', // Việt hóa
           style: TextStyle(
             color: Colors.white,
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
           ),
         ),
       ),
@@ -148,16 +165,16 @@ class ProductCard extends StatelessWidget {
       top: 8,
       right: 8,
       child: Material(
-        color: Colors.white.withOpacity(0.9),
+        color: Colors.white.withValues(alpha: 0.9),
         shape: const CircleBorder(),
         child: IconButton(
           icon: const Icon(
-            Icons.favorite_border,
+            Icons.favorite_border_rounded,
             size: 18,
-            color: Colors.red,
+            color: kzoneOrange, // Đổi từ đỏ sang Nâu Cam
           ),
           onPressed: () {
-            // TODO: Add to favorites
+            // Logic cho yêu thích sau này sẽ code ở đây
           },
         ),
       ),
@@ -167,11 +184,11 @@ class ProductCard extends StatelessWidget {
   Widget _buildDiscountBadge() {
     return Positioned(
       top: 8,
-      right: 52,
+      right: 48,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.orange,
+          color: Colors.black87, // Màu đen sang trọng cho % giảm giá
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
@@ -200,12 +217,14 @@ class ProductCard extends StatelessWidget {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              height: 1.2,
+              color: Colors.black87,
+              height: 1.3,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(child: _buildPriceSection()),
               _buildCartButton(),
@@ -221,53 +240,54 @@ class ProductCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '${product.price.toStringAsFixed(0)}₫',
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: kPrimaryColor,
-          ),
-        ),
         if (product.isOnSale && product.originalPrice != null)
           Text(
-            '${product.originalPrice!.toStringAsFixed(0)}₫',
+            _formatCurrency(product.originalPrice!),
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               color: Colors.grey[500],
               decoration: TextDecoration.lineThrough,
             ),
           ),
+        Text(
+          _formatCurrency(product.price),
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+            color: kzoneBrown, // Giá tiền màu Nâu
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildCartButton() {
     return Container(
-      padding: const EdgeInsets.all(6),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: product.isInStock ? kPrimaryColor : Colors.grey,
-        borderRadius: BorderRadius.circular(6),
+        color: product.isInStock ? kzoneBrown : Colors.grey.shade300,
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Icon(
         product.isInStock
-            ? Icons.add_shopping_cart
-            : Icons.remove_shopping_cart,
+            ? Icons.shopping_bag_outlined // Đổi icon sang giỏ xách cho thời trang
+            : Icons.remove_shopping_cart_outlined,
         size: 16,
-        color: Colors.white,
+        color: product.isInStock ? Colors.white : Colors.grey.shade500,
       ),
     );
   }
 
   Widget _buildOutOfStockLabel() {
     return Padding(
-      padding: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.only(top: 8),
       child: Text(
-        'Hết hàng',
+        'Tạm hết hàng',
         style: TextStyle(
           fontSize: 11,
           color: Colors.red[400],
           fontStyle: FontStyle.italic,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );

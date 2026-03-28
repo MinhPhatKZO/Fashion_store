@@ -23,7 +23,7 @@ dataset = None
 @app.post("/train")
 def train_model():
     global model, dataset
-    print("\n🚀 ĐANG KÍCH HOẠT LIGHTFM (CHẾ ĐỘ TƯƠNG THÍCH CAO)...")
+    print("\n ĐANG KÍCH HOẠT LIGHTFM (CHẾ ĐỘ TƯƠNG THÍCH CAO)...")
 
     users = [str(u["_id"]) for u in db.users.find({}, {"_id": 1})]
     items = [str(p["_id"]) for p in db.products.find({}, {"_id": 1})]
@@ -47,7 +47,7 @@ def train_model():
 
     try:
         model.fit(interactions_matrix, epochs=10, num_threads=1)
-        print("🎉 CHÚC MỪNG! LIGHTFM ĐÃ HỌC XONG TRÊN MÁY BẠN.")
+        print("CHÚC MỪNG! LIGHTFM ĐÃ HỌC XONG TRÊN MÁY BẠN.")
         return {"status": "success", "message": "LightFM đã huấn luyện thành công!"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -76,7 +76,7 @@ class ChatRequest(BaseModel):
 @app.post("/chat")
 def chat_with_llama(req: ChatRequest):
     try:
-        print(f"\n💬 Khách nhắn: {req.message}")
+        print(f"\n Khách nhắn: {req.message}")
         msg_lower = req.message.lower()
         
         # 1. NHẬN DIỆN Ý ĐỊNH (Tư vấn vs Tìm kiếm cụ thể)
@@ -145,7 +145,7 @@ def chat_with_llama(req: ChatRequest):
                 system_prompt = f"Bạn là lễ tân KZONE. Khách tìm '{search_term}' và CÓ HÀNG. Lệnh: Trả lời đúng 1 câu duy nhất vui vẻ báo có hàng và mời xem ảnh."
 
         # 5. GỌI OLLAMA (CÓ TRANG BỊ VŨ KHÍ KHÓA MÕM)
-        print("🤖 AI đang suy nghĩ...")
+        print("AI đang suy nghĩ...")
         response = ollama.chat(model='qwen2:1.5b', messages=[
             {'role': 'system', 'content': system_prompt},
             {'role': 'user', 'content': req.message}
@@ -155,7 +155,7 @@ def chat_with_llama(req: ChatRequest):
         })
 
         reply_text = response['message']['content']
-        print(f"🤖 AI trả lời:\n{reply_text}")
+        print(f"AI trả lời:\n{reply_text}")
         
         return {
             "success": True, 
@@ -164,5 +164,5 @@ def chat_with_llama(req: ChatRequest):
         }
 
     except Exception as e:
-        print(f"❌ Lỗi Chatbot: {e}")
+        print(f"Lỗi Chatbot: {e}")
         return {"success": False, "reply": "Xin lỗi, hiện tại trợ lý AI đang bận. Bạn quay lại sau nhé!"}

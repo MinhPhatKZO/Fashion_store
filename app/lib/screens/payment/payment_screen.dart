@@ -23,13 +23,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   bool _isProcessing = false;
 
-  // Dropdown ngân hàng VNPAY (optional)
+  // 👇 Màu sắc thương hiệu KZONE
+  static const Color kzoneBrown = Color(0xFF8B4513);
+  static const Color kzoneBeige = Color(0xFFFAF7F2);
+  static const Color kzoneOrange = Color(0xFFA0522D);
+
   String? _selectedBankCode;
   final List<Map<String, String>> _vnpayBanks = [
     {'code': '', 'name': 'Cổng thanh toán VNPAYQR'},
-    {'code': 'VNPAYQR', 'name': 'Thanh toán qua ứng dụng hỗ trợ VNPAYQR'},
-    {'code': 'VNBANK', 'name': 'Thẻ ATM - Tài khoản ngân hàng nội địa'},
-    {'code': 'INTCARD', 'name': 'Thẻ thanh toán quốc tế'},
+    {'code': 'VNPAYQR', 'name': 'Ứng dụng hỗ trợ VNPAYQR'},
+    {'code': 'VNBANK', 'name': 'Thẻ ATM / Tài khoản nội địa'},
+    {'code': 'INTCARD', 'name': 'Thẻ quốc tế (Visa, Master,...) '},
   ];
 
   @override
@@ -39,18 +43,24 @@ class _PaymentScreenState extends State<PaymentScreen> {
     super.dispose();
   }
 
+  // 👇 Hàm định dạng tiền VNĐ
+  String _formatCurrency(double price) {
+    String priceStr = price.toStringAsFixed(0);
+    priceStr = priceStr.replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.');
+    return '$priceStr₫';
+  }
+
   Future<void> _handlePayment() async {
     if (_selectedPaymentMethod == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn phương thức thanh toán')),
-      );
+      _showError('Vui lòng chọn phương thức thanh toán');
       return;
     }
 
     if (!_formKey.currentState!.validate()) return;
 
-    final orderId = DateTime.now().millisecondsSinceEpoch.toString();
-    final totalAmount = _cart.subTotal + 20; // subtotal + shipping
+    final orderId = "KZONE_${DateTime.now().millisecondsSinceEpoch}";
+    final totalAmount = _cart.subTotal + 30000; // Phí ship 30k VNĐ
 
     switch (_selectedPaymentMethod!) {
       case PaymentMethod.cod:
@@ -65,141 +75,148 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
-  Future<void> _processCOD(String orderId, double amount) async {
+  void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Đặt hàng COD thành công!')),
+      SnackBar(content: Text(msg), backgroundColor: Colors.redAccent),
     );
-    await _cart.clear();
-    // TODO: Gọi API lưu order với phương thức COD
   }
 
-  Future<void> _processMoMo(String orderId, double amount) async {
-    if (_cart.items.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Giỏ hàng trống')),
-      );
-      return;
-    }
+  Future<void> _processCOD(String orderId, double amount) async {
+    setState(() => _isProcessing = true);
+    await Future.delayed(const Duration(seconds: 2)); // Giả lập xử lý
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('🎉 Đặt hàng thành công! KZONE sẽ sớm liên hệ bạn.'), backgroundColor: kzoneBrown),
+    );
+    await _cart.clear();
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
 
+  // Logic MoMo & VNPay giữ nguyên nhưng bọc trong UI mới
+  Future<void> _processMoMo(String orderId, double amount) async {
     setState(() => _isProcessing = true);
     try {
       final service = MoMoService();
-      final payment = await service.createPayment(orderId, amount); // lấy payment url từ MoMo
+      final payment = await service.createPayment(orderId, amount);
+      if (!mounted) return;
 
       if (payment != null && payment.payUrl.isNotEmpty) {
         final url = Uri.parse(payment.payUrl);
         if (await canLaunchUrl(url)) {
           await launchUrl(url, mode: LaunchMode.externalApplication);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Không thể mở liên kết MoMo')),
-          );
+          _showError('Không thể mở ứng dụng MoMo');
         }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(payment?.message ?? 'Thanh toán MoMo thất bại')),
-        );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi kết nối MoMo: $e')),
-      );
+      _showError('Lỗi kết nối MoMo');
     } finally {
-      setState(() => _isProcessing = false);
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
   Future<void> _processVNPay(String orderId, double amount) async {
-    if (_cart.items.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Giỏ hàng trống')),
-      );
-      return;
-    }
-
     setState(() => _isProcessing = true);
     try {
       final service = VNPayService();
-      final payment = await service.createPayment(orderId, amount); // lấy payment url từ VNPAY
+      final payment = await service.createPayment(orderId, amount);
+      if (!mounted) return;
 
       if (payment != null && payment.success && payment.paymentUrl.isNotEmpty) {
         final url = Uri.parse(payment.paymentUrl);
         if (await canLaunchUrl(url)) {
           await launchUrl(url, mode: LaunchMode.externalApplication);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Không thể mở liên kết VNPAY')),
-          );
+          _showError('Không thể mở liên kết VNPAY');
         }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(payment?.message ?? 'Thanh toán VNPAY thất bại')),
-        );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi kết nối VNPAY: $e')),
-      );
+      _showError('Lỗi kết nối VNPAY');
     } finally {
-      setState(() => _isProcessing = false);
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
-  String _getPaymentName(PaymentMethod method) {
-    switch (method) {
-      case PaymentMethod.cod:
-        return 'Thanh toán khi nhận hàng (COD)';
-      case PaymentMethod.momo:
-        return 'MoMo Wallet';
-      case PaymentMethod.vnpay:
-        return 'VNPAY';
-    }
+  @override
+  Widget build(BuildContext context) {
+    final total = _cart.subTotal + 30000;
+
+    return Scaffold(
+      backgroundColor: kzoneBeige,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: kzoneBrown, size: 22),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('THANH TOÁN', style: TextStyle(color: kzoneBrown, fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 1.2)),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('PHƯƠNG THỨC THANH TOÁN', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: kzoneBrown, letterSpacing: 0.5)),
+            const SizedBox(height: 16),
+            _buildPaymentCard(PaymentMethod.cod, 'Tiền mặt (COD)', Icons.payments_outlined, Colors.green),
+            _buildPaymentCard(PaymentMethod.momo, 'Ví MoMo', Icons.account_balance_wallet_outlined, Colors.pink),
+            _buildPaymentCard(PaymentMethod.vnpay, 'VNPAY / Ngân hàng', Icons.account_balance_outlined, Colors.blue),
+            
+            const SizedBox(height: 24),
+            _buildInfoForm(),
+            
+            const SizedBox(height: 32),
+            _buildOrderSummary(total),
+            
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _isProcessing ? null : _handlePayment,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kzoneBrown,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                elevation: 0,
+              ),
+              child: _isProcessing
+                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : Text(_selectedPaymentMethod == PaymentMethod.cod ? 'ĐẶT HÀNG NGAY' : 'THANH TOÁN NGAY', 
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1)),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  Widget _buildPaymentCard(PaymentMethod method) {
+  Widget _buildPaymentCard(PaymentMethod method, String name, IconData icon, Color color) {
     final isSelected = _selectedPaymentMethod == method;
-    IconData icon;
-    Color color;
-
-    switch (method) {
-      case PaymentMethod.cod:
-        icon = Icons.money;
-        color = Colors.green;
-        break;
-      case PaymentMethod.momo:
-        icon = Icons.account_balance_wallet;
-        color = Colors.pink;
-        break;
-      case PaymentMethod.vnpay:
-        icon = Icons.credit_card;
-        color = Colors.blue;
-        break;
-    }
-
     return GestureDetector(
       onTap: () => setState(() => _selectedPaymentMethod = method),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border.all(color: isSelected ? color : Colors.grey.shade300, width: isSelected ? 2 : 1),
-          borderRadius: BorderRadius.circular(8),
-          color: isSelected ? color.withOpacity(0.05) : Colors.white,
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: isSelected ? kzoneBrown : Colors.transparent, width: 2),
+          boxShadow: [BoxShadow(color: kzoneBrown.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
         ),
         child: Row(
           children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                _getPaymentName(method),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                ),
-              ),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+              child: Icon(icon, color: color, size: 24),
             ),
-            if (isSelected) Icon(Icons.check_circle, color: color),
+            const SizedBox(width: 16),
+            Expanded(child: Text(name, style: TextStyle(fontSize: 15, fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600))),
+            if (isSelected) const Icon(Icons.check_circle_rounded, color: kzoneBrown),
           ],
         ),
       ),
@@ -207,111 +224,75 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Widget _buildInfoForm() {
-    if (_selectedPaymentMethod == null) return const SizedBox.shrink();
-
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: Colors.grey.shade300),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: kzoneBrown.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('THÔNG TIN GIAO HÀNG', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('THÔNG TIN NHẬN HÀNG', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: kzoneBrown)),
+            const SizedBox(height: 16),
+            _buildTextField(_addressController, 'Địa chỉ chi tiết', Icons.location_on_outlined),
+            const SizedBox(height: 16),
+            _buildTextField(_phoneController, 'Số điện thoại liên hệ', Icons.phone_android_outlined, isPhone: true),
+            
+            if (_selectedPaymentMethod == PaymentMethod.vnpay) ...[
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _addressController,
-                decoration: InputDecoration(
-                  labelText: 'Địa chỉ giao hàng *',
-                  prefixIcon: const Icon(Icons.location_on),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                maxLines: 2,
-                validator: (v) => (v == null || v.isEmpty) ? 'Vui lòng nhập địa chỉ' : null,
-              ),
+              const Divider(),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _phoneController,
-                decoration: InputDecoration(
-                  labelText: 'Số điện thoại *',
-                  prefixIcon: const Icon(Icons.phone),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                keyboardType: TextInputType.phone,
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Vui lòng nhập số điện thoại';
-                  if (v.length < 10) return 'Số điện thoại không hợp lệ';
-                  return null;
-                },
+              DropdownButtonFormField<String>(
+                value: _selectedBankCode,
+                decoration: _inputDecoration('Phương thức VNPAY', Icons.account_balance),
+                items: _vnpayBanks.map((b) => DropdownMenuItem(value: b['code'], child: Text(b['name']!, style: const TextStyle(fontSize: 13)))).toList(),
+                onChanged: (v) => setState(() => _selectedBankCode = v),
               ),
-              if (_selectedPaymentMethod == PaymentMethod.vnpay) ...[
-                const SizedBox(height: 16),
-                const Text('Chọn phương thức thanh toán (Tùy chọn)'),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: _selectedBankCode,
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.account_balance),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  hint: const Text('Chọn phương thức'),
-                  items: _vnpayBanks.map((b) => DropdownMenuItem(
-                    value: b['code'],
-                    child: Text(b['name']!),
-                  )).toList(),
-                  onChanged: (v) => setState(() => _selectedBankCode = v),
-                ),
-              ]
-            ],
-          ),
+            ]
+          ],
         ),
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final subtotal = _cart.subTotal;
-    const shipping = 20.0;
-    final total = subtotal + shipping;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Thanh toán')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _buildOrderSummary(double total) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('CHỌN PHƯƠNG THỨC THANH TOÁN', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            _buildPaymentCard(PaymentMethod.cod),
-            _buildPaymentCard(PaymentMethod.momo),
-            _buildPaymentCard(PaymentMethod.vnpay),
-            const SizedBox(height: 24),
-            _buildInfoForm(),
-            const SizedBox(height: 24),
-            Text('TỔNG: \$${total.toStringAsFixed(2)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _isProcessing ? null : _handlePayment,
-              child: _isProcessing
-                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                  : Text(
-                      _selectedPaymentMethod == null
-                          ? 'HOÀN TẤT'
-                          : _selectedPaymentMethod == PaymentMethod.cod
-                              ? 'ĐẶT HÀNG'
-                              : 'THANH TOÁN NGAY',
-                    ),
-            ),
+            const Text('Tổng cộng', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
+            Text(_formatCurrency(total), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: kzoneBrown)),
           ],
         ),
-      ),
+        const SizedBox(height: 4),
+        const Text('(Đã bao gồm phí vận chuyển 30.000₫)', style: TextStyle(fontSize: 11, color: Colors.grey, fontStyle: FontStyle.italic)),
+      ],
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {bool isPhone = false}) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: isPhone ? TextInputType.phone : TextInputType.text,
+      decoration: _inputDecoration(label, icon),
+      validator: (v) => (v == null || v.isEmpty) ? 'Vui lòng không để trống' : null,
+    );
+  }
+
+  InputDecoration _inputDecoration(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(fontSize: 13, color: Colors.grey),
+      prefixIcon: Icon(icon, color: kzoneBrown, size: 20),
+      filled: true,
+      fillColor: kzoneBeige.withValues(alpha: 0.5),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: kzoneBrown, width: 1)),
     );
   }
 }

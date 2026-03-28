@@ -24,13 +24,13 @@ const PORT = process.env.PORT || 5000;
 const allowedOrigins = [
   "http://localhost:3000", 
   "http://localhost:5173",
+  "http://127.0.0.1:3000",
+  "http://10.0.2.2:3000", // Thêm origin cho máy ảo nếu cần
   process.env.CLIENT_URL
 ].filter(Boolean);
 
-// Cấu hình MỚI
 app.use(cors({
   origin: allowedOrigins,
-  // Thêm "PATCH" và "OPTIONS" vào mảng methods
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], 
   credentials: true 
 }));
@@ -55,12 +55,10 @@ const io = new Server(server, {
   },
 });
 
-// Biến lưu số người xem (Key: roomName, Value: count)
 const roomViewers = {};
 
 io.on("connection", (socket) => {
   
-  // --- CHAT THƯỜNG ---
   socket.on("join_room", (roomId) => {
     if (!roomId) return;
     socket.join(roomId);
@@ -86,29 +84,19 @@ io.on("connection", (socket) => {
     }
   });
 
-  // =======================================================
-  // --- 👇 PHẦN LIVESTREAM REAL-TIME (CẬP NHẬT MỚI) 👇 ---
-  // =======================================================
-
-  // 1. Join Livestream (Xử lý tách biệt Host và Viewer)
   socket.on("join_livestream", (data) => {
-    // data có thể là string (code cũ) hoặc object { roomName, role } (code mới)
     const roomName = typeof data === 'string' ? data : data.roomName;
-    const role = typeof data === 'object' ? data.role : 'viewer'; // Mặc định viewer
+    const role = typeof data === 'object' ? data.role : 'viewer';
 
     if (!roomName) return;
     socket.join(roomName);
-    
-    // Đánh dấu socket này có phải là viewer không để dùng khi disconnect
     socket.isViewer = (role === 'viewer');
 
-    // CHỈ TĂNG VIEW NẾU LÀ VIEWER
     if (socket.isViewer) {
         if (!roomViewers[roomName]) roomViewers[roomName] = 0;
         roomViewers[roomName]++;
     }
     
-    // Gửi cập nhật view
     const currentView = roomViewers[roomName] || 0;
     io.to(roomName).emit("view_count_update", { channelName: roomName, count: currentView });
     io.emit("stream_stats_update", { channelName: roomName, viewers: currentView });
@@ -116,27 +104,21 @@ io.on("connection", (socket) => {
     console.log(`📺 ${role.toUpperCase()} joined: ${roomName}. Views: ${currentView}`);
   });
 
-  // 2. Rời Livestream
   socket.on("leave_livestream", (roomName) => {
       socket.leave(roomName);
-      
-      // Chỉ giảm view nếu là viewer rời đi
       if (socket.isViewer && roomViewers[roomName] > 0) {
           roomViewers[roomName]--;
       }
-      
       const currentView = roomViewers[roomName] || 0;
       io.to(roomName).emit("view_count_update", { channelName: roomName, count: currentView });
       io.emit("stream_stats_update", { channelName: roomName, viewers: currentView });
   });
 
-  // 3. Seller bắt đầu Live
   socket.on("seller_start_live", (streamData) => {
       io.emit("stream_started", streamData); 
       console.log("🔥 New Stream Started:", streamData.title);
   });
 
-  // 4. Seller kết thúc Live
   socket.on("end_livestream", (roomName) => {
       io.to(roomName).emit("stream_ended");
       io.emit("stream_ended", roomName);
@@ -144,16 +126,13 @@ io.on("connection", (socket) => {
       console.log("❌ Stream Ended:", roomName);
   });
 
-  // 5. Chat & Tim & Ghim
   socket.on("live_chat_message", (data) => io.to(data.streamId).emit("new_comment", data));
   socket.on("send_heart", (roomName) => io.to(roomName).emit("receive_heart"));
   socket.on("pin_product", (data) => io.to(data.streamId).emit("product_pinned", data.product));
 
-  // 6. Xử lý ngắt kết nối đột ngột
   socket.on("disconnecting", () => {
       const rooms = socket.rooms;
       rooms.forEach((room) => {
-          // Chỉ xử lý nếu là room livestream và socket là viewer
           if (roomViewers[room] !== undefined && socket.isViewer) { 
               if (roomViewers[room] > 0) roomViewers[room]--;
               
@@ -187,7 +166,6 @@ app.use("/api/admin/promotions", require("./routes/admin/promotionAdmin"));
 app.use("/api/admin/sellers", require("./routes/admin/sellerAdmin"));
 app.use("/api/admin/stats", require("./routes/admin/statsAdmin"));
 
-// AI 
 app.use('/api/interactions', interactionRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 
@@ -199,6 +177,9 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Internal Server Error', error: err.message });
 });
 
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+// 👇 THAY ĐỔI QUAN TRỌNG ĐỂ THÔNG MẠNG CHO MÁY ẢO
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server KZONE running on:`);
+  console.log(`🏠 Local: http://localhost:${PORT}`);
+  console.log(`📱 Emulator (Android): http://10.0.2.2:${PORT}`);
 });

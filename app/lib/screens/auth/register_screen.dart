@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 
-// Giả định AuthService có phương thức register tương ứng:
-// Future<Map<String, dynamic>> register(String name, String email, String password, {String? phone, String? address});
-
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -12,12 +9,9 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  // Đồng bộ với React: showPassword
   bool hide = true;
-  // Đồng bộ với React: isLoading
   bool loading = false; 
 
-  // Đồng bộ với React: form state
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -25,15 +19,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController addressController = TextEditingController();
 
   final AuthService auth = AuthService();
-  
-  // Màu chủ đạo (Indigo-600)
   final Color primaryColor = const Color(0xFF4F46E5);
 
-  // === Đồng bộ Notification Component (Sử dụng SnackBar trong Flutter) ===
   void _showSnackBar(String message, {bool isError = true}) {
-    // Đóng SnackBar cũ nếu có
     ScaffoldMessenger.of(context).hideCurrentSnackBar(); 
-    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -55,20 +44,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // === Đồng bộ handleRegister (với logic async/await và thông báo) ===
   void handleRegister() async {
-    // 1. Validation (Đồng bộ với React's required fields)
     if (nameController.text.trim().isEmpty ||
         emailController.text.trim().isEmpty ||
         passwordController.text.trim().isEmpty) {
-      _showSnackBar("Vui lòng điền đầy đủ các trường bắt buộc (Tên, Email, Mật khẩu).", isError: true);
+      _showSnackBar("Vui lòng điền đầy đủ các trường bắt buộc.", isError: true);
       return;
     }
 
     setState(() => loading = true);
 
     try {
-      // Giả định AuthService.register được cập nhật để nhận tất cả các trường
       await auth.register(
         nameController.text.trim(),
         emailController.text.trim(),
@@ -77,26 +63,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
         address: addressController.text.trim(),
       );
 
+      if (!mounted) return;
       setState(() => loading = false);
       
-      // 2. Success flow (Đồng bộ thông báo và độ trễ 1.5s)
       _showSnackBar("Đăng ký thành công! Đang chuyển hướng...", isError: false);
       
       Future.delayed(const Duration(milliseconds: 1500), () {
-        // Mô phỏng navigateToLogin
+        if (!mounted) return;
         Navigator.pushReplacementNamed(context, '/login'); 
       });
 
     } catch (e) {
+      if (!mounted) return;
       setState(() => loading = false);
-      // 3. Error handling (Đồng bộ thông báo lỗi tiếng Việt)
-      String errorMessage;
-      if (e.toString().contains('409') || e.toString().contains('Email')) {
-        errorMessage = "Email đã được sử dụng hoặc lỗi máy chủ (500).";
-      } else {
-        errorMessage = "Đăng ký thất bại do lỗi không xác định.";
-      }
-      _showSnackBar(errorMessage, isError: true);
+      _showSnackBar("Đăng ký thất bại: $e", isError: true);
     }
   }
 
@@ -110,7 +90,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  // Component phụ: InputField (Styled Input with Icon)
   Widget _buildInputField({
     required TextEditingController controller,
     required String label,
@@ -155,7 +134,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.indigo.shade50, // Đồng bộ với bg-indigo-50
+      backgroundColor: Colors.indigo.shade50,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 40),
@@ -164,7 +143,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             padding: const EdgeInsets.all(30),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(24), // Đồng bộ với rounded-3xl
+              borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
                   color: Colors.indigo.shade100,
@@ -176,7 +155,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header (Đồng bộ văn bản tiếng Việt)
                 Text(
                   "Tham Gia Cộng Đồng",
                   textAlign: TextAlign.center,
@@ -198,7 +176,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 35),
                 
-                // === Form Fields ===
                 _buildInputField(
                   controller: nameController,
                   label: "Họ và tên đầy đủ",
@@ -234,7 +211,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 
                 const SizedBox(height: 20),
                 
-                // Register Button (Đồng bộ style và trạng thái loading)
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor,
@@ -242,7 +218,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 8,
-                    shadowColor: primaryColor.withOpacity(0.5),
+                    // 👇 Đã sửa thành withValues ở đây
+                    shadowColor: primaryColor.withValues(alpha: 0.5),
                   ),
                   onPressed: loading ? null : handleRegister,
                   child: loading
@@ -260,7 +237,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                 ),
                 
-                // Footer Navigation (Đồng bộ văn bản)
                 const SizedBox(height: 25),
                 GestureDetector(
                   onTap: loading ? null : () => Navigator.pushReplacementNamed(context, '/login'),

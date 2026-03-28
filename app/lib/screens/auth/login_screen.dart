@@ -76,21 +76,24 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
       
+      if (!mounted) return; // Thêm kiểm tra ở đây vì ở dưới có dùng _showSnackBar
       _showSnackBar('Đăng nhập thành công!');
 
       setState(() => loading = false);
 
       // 3. Chờ 500ms rồi điều hướng về trang chủ (Đồng bộ với React)
       Future.delayed(const Duration(milliseconds: 500), () {
+        if (!mounted) return; // Thêm kiểm tra trước khi dùng Navigator trong async callback
         // Chuyển hướng về trang gốc '/'
         Navigator.pushReplacementNamed(context, '/'); 
       });
       
     } catch (e) {
+      if (!mounted) return; // Thêm kiểm tra trước khi dùng setState và _showSnackBar trong catch
       setState(() => loading = false);
       // Thông báo lỗi Việt hóa
       _showSnackBar('Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.');
-      print('Login error: $e');
+      debugPrint('Login error: $e'); // Thay đổi print thành debugPrint
     }
   }
 

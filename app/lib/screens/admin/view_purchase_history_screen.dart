@@ -29,9 +29,12 @@ class _ViewPurchaseHistoryScreenState extends State<ViewPurchaseHistoryScreen> {
         }).toList();
       }
     } catch (e) {
+      if (!mounted) return; // Thêm check mounted
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
-      setState(() => _loading = false);
+      if (mounted) { // Thêm check mounted
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -49,6 +52,7 @@ class _ViewPurchaseHistoryScreenState extends State<ViewPurchaseHistoryScreen> {
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
+            // Thanh tìm kiếm
             Row(
               children: [
                 Expanded(
@@ -65,46 +69,48 @@ class _ViewPurchaseHistoryScreenState extends State<ViewPurchaseHistoryScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            if (_loading) const Center(child: CircularProgressIndicator()),
-            if (!_loading)
-              Expanded(
-                child: _orders.isEmpty
-                    ? const Center(child: Text('Không có đơn hàng'))
-                    : ListView.separated(
-                        itemCount: _orders.length,
-                        separatorBuilder: (_, __) => const Divider(),
-                        itemBuilder: (context, i) {
-                          final o = _orders[i];
-                          return ListTile(
-                            title: Text('Đơn ${o.id} — ${o.user?.email ?? 'khách'}'),
-                            subtitle: Text('Tổng: \$${o.totalPrice.toStringAsFixed(2)} — Trạng thái: ${o.status}'),
-                            onTap: () {
-                              showDialog(
-                                context: context,
-                                builder: (_) => AlertDialog(
-                                  title: Text('Chi tiết đơn ${o.id}'),
-                                  content: SizedBox(
-                                    width: double.maxFinite,
-                                    child: ListView(
-                                      shrinkWrap: true,
-                                      children: o.items
-                                          .map((it) => ListTile(
-                                                title: Text(it.productName),
-                                                trailing: Text('x${it.quantity} — \$${it.price}'),
-                                              ))
-                                          .toList(),
-                                    ),
+            
+            // Khu vực hiển thị nội dung chính
+            Expanded(
+              child: _loading 
+                ? const Center(child: CircularProgressIndicator()) 
+                : _orders.isEmpty
+                  ? const Center(child: Text('Không có đơn hàng'))
+                  : ListView.separated(
+                      itemCount: _orders.length,
+                      separatorBuilder: (_, __) => const Divider(),
+                      itemBuilder: (context, i) {
+                        final o = _orders[i];
+                        return ListTile(
+                          title: Text('Đơn ${o.id} — ${o.user?.email ?? 'khách'}'),
+                          subtitle: Text('Tổng: \$${o.totalPrice.toStringAsFixed(2)} — Trạng thái: ${o.status}'),
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (_) => AlertDialog(
+                                title: Text('Chi tiết đơn ${o.id}'),
+                                content: SizedBox(
+                                  width: double.maxFinite,
+                                  child: ListView(
+                                    shrinkWrap: true,
+                                    children: o.items
+                                        .map((it) => ListTile(
+                                              title: Text(it.productName),
+                                              trailing: Text('x${it.quantity} — \$${it.price}'),
+                                            ))
+                                        .toList(),
                                   ),
-                                  actions: [
-                                    TextButton(onPressed: () => Navigator.pop(context), child: const Text('Đóng')),
-                                  ],
                                 ),
-                              );
-                            },
-                          );
-                        },
-                      ),
-              ),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(context), child: const Text('Đóng')),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+            ),
           ],
         ),
       ),

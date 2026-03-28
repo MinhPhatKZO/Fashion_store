@@ -8,23 +8,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:app/main.dart';
+// 👇 Đã sửa đúng tên package của bạn
+import 'package:fashion_store_app/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Smoke test for Fashion Store App', (WidgetTester tester) async {
+    // 👇 Đã đổi MyApp thành FashionStoreApp
+    await tester.pumpWidget(const FashionStoreApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Vì đây là app bán hàng, không có nút đếm số '+' nên mình thay bằng 
+    // lệnh kiểm tra xem app có khởi tạo thành công MaterialApp hay không.
+    expect(find.byType(MaterialApp), findsOneWidget);
   });
 }

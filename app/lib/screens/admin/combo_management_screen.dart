@@ -19,9 +19,13 @@ class _ComboManagementScreenState extends State<ComboManagementScreen> {
     try {
       _promos = await _service.getPromotions();
     } catch (e) {
+      if (!mounted) return; // Kiểm tra trước khi dùng context
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
-      setState(() => _loading = false);
+      // Vì finally luôn chạy sau try/catch (cũng chứa await), nên cần check mounted trước khi setState
+      if (mounted) { 
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -30,6 +34,7 @@ class _ComboManagementScreenState extends State<ComboManagementScreen> {
       await _service.togglePromotion(id);
       await _loadPromos();
     } catch (e) {
+      if (!mounted) return; // Kiểm tra trước khi dùng context
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
@@ -39,6 +44,7 @@ class _ComboManagementScreenState extends State<ComboManagementScreen> {
       await _service.deletePromotion(id);
       await _loadPromos();
     } catch (e) {
+      if (!mounted) return; // Kiểm tra trước khi dùng context
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }

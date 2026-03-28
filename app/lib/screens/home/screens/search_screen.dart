@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../home_style.dart';
+import 'home_style.dart';
 
 class SearchScreen extends StatelessWidget {
   const SearchScreen({super.key});

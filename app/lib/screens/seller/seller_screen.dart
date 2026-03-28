@@ -34,6 +34,9 @@ class _SellerScreenState extends State<SellerScreen> {
     await prefs.remove('username');
     await prefs.remove('email');
     await prefs.remove('role');
+    
+    // 👇 Thêm dòng kiểm tra mounted trước khi dùng BuildContext (context)
+    if (!mounted) return; 
     Navigator.pushReplacementNamed(context, '/login');
   }
 
@@ -62,21 +65,27 @@ class _SellerScreenState extends State<SellerScreen> {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                // TODO: navigate to my products
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Tính năng My Products đang được phát triển')),
+                );
               },
               child: const Text('My Products'),
             ),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: () {
-                // TODO: navigate to add product
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Tính năng Add Product đang được phát triển')),
+                );
               },
               child: const Text('Add Product'),
             ),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: () {
-                // TODO: navigate to my orders
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Tính năng My Orders đang được phát triển')),
+                );
               },
               child: const Text('My Orders'),
             ),

@@ -4,9 +4,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 
-// WEB picker
-import 'dart:html' as html;
-
 class ProfileScreen extends StatefulWidget {
   final String username;
   final String email;
@@ -26,8 +23,12 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final ImagePicker _picker = ImagePicker();
   String? _localImagePath;
-  Uint8List? _webImageBytes; // dùng cho Web
-  // Removed _isUploadingImage as it wasn't used to show a loading state in the original build method.
+  Uint8List? _webImageBytes;
+
+  // 👇 Màu sắc thương hiệu KZONE
+  static const Color kzoneBrown = Color(0xFF8B4513);
+  static const Color kzoneLightBrown = Color(0xFFC4A484);
+  static const Color kzoneBeige = Color(0xFFFAF7F2);
 
   @override
   void initState() {
@@ -37,13 +38,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadLocalImage() async {
     final prefs = await SharedPreferences.getInstance();
-    // Use a unique key for the profile image storage
     final savedImage = prefs.getString('profile_image');
 
-    // Only set _localImagePath for non-web platforms as _webImageBytes is used for web
     if (!kIsWeb) {
       if (savedImage != null) {
-        // Check if the file still exists before setting the path (optional safety check)
         if (await File(savedImage).exists()) {
           setState(() {
             _localImagePath = savedImage;
@@ -51,12 +49,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       }
     }
-    // Note: For web, the image bytes are not persisted with SharedPreferences in this approach,
-    // they would typically be re-fetched from a server or re-selected by the user after refresh.
   }
 
-  // PICK IMAGE — MOBILE
-  Future<void> _pickImageMobile(ImageSource source) async {
+  Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
@@ -66,97 +61,65 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
 
       if (image != null) {
-        // You might want to copy the image to a permanent app directory
-        // if you want it to persist even if the picker temporary file is removed.
-        // For simplicity, we stick to saving the path here.
+        if (kIsWeb) {
+          var bytes = await image.readAsBytes();
+          setState(() {
+            _webImageBytes = bytes;
+          });
+        } else {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('profile_image', image.path);
 
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('profile_image', image.path);
-
-        setState(() {
-          _localImagePath = image.path;
-        });
+          setState(() {
+            _localImagePath = image.path;
+          });
+        }
 
         if (mounted) {
-          Navigator.pop(context); // Close the bottom sheet after selection
+          Navigator.pop(context); 
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Cập nhật ảnh đại diện thành công!')),
+            const SnackBar(
+              content: Text('✅ Đã cập nhật ảnh đại diện!'),
+              backgroundColor: kzoneBrown,
+            ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
       }
     }
   }
 
-  // PICK IMAGE — WEB
-  Future<void> _pickImageWeb() async {
-    final html.FileUploadInputElement uploadInput =
-        html.FileUploadInputElement()..accept = 'image/*';
-
-    uploadInput.click();
-
-    uploadInput.onChange.listen((event) {
-      final file = uploadInput.files?.first;
-      if (file == null) return;
-
-      final reader = html.FileReader();
-
-      reader.readAsArrayBuffer(file);
-
-      reader.onLoadEnd.listen((event) async {
-        if (mounted) {
-          setState(() {
-            _webImageBytes = reader.result as Uint8List;
-          });
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Cập nhật ảnh đại diện thành công!')),
-          );
-        }
-      });
-    });
-  }
-
-  void _chooseImage() {
-    if (kIsWeb) {
-      _pickImageWeb();
-    } else {
-      _showImageSourceDialog();
-    }
-  }
-
-  // MOBILE: chọn Camera / Gallery
   void _showImageSourceDialog() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       ),
       builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text("Chọn từ thư viện"),
-              onTap: () {
-                // Navigator.pop(context) is now called inside _pickImageMobile
-                _pickImageMobile(ImageSource.gallery);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text("Chụp ảnh"),
-              onTap: () {
-                // Navigator.pop(context) is now called inside _pickImageMobile
-                _pickImageMobile(ImageSource.camera);
-              },
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("CẬP NHẬT ẢNH ĐẠI DIỆN", 
+                style: TextStyle(fontWeight: FontWeight.w900, color: kzoneBrown, letterSpacing: 1)),
+              const SizedBox(height: 10),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined, color: kzoneBrown),
+                title: const Text("Chọn từ thư viện"),
+                onTap: () => _pickImage(ImageSource.gallery),
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined, color: kzoneBrown),
+                title: const Text("Chụp ảnh mới"),
+                onTap: () => _pickImage(ImageSource.camera),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -166,258 +129,205 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
 
-    // Điều hướng đến màn hình đăng nhập, đảm bảo route '/login' đã được định nghĩa
     if (mounted) {
       Navigator.of(context).pushReplacementNamed('/login');
     }
   }
 
-  // Widget riêng để tạo các mục menu trong body
   Widget _buildProfileMenuItem({
     required IconData icon,
     required String title,
     VoidCallback? onTap,
     String? badgeText,
+    Color? textColor,
   }) {
-    return InkWell(
+    return ListTile(
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
-        child: Row(
-          children: [
-            Icon(icon, size: 24, color: Colors.blueGrey),
-            const SizedBox(width: 20),
-            Expanded(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: (textColor ?? kzoneBrown).withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, size: 22, color: textColor ?? kzoneBrown),
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: 15, 
+          fontWeight: FontWeight.w600,
+          color: textColor ?? Colors.black87,
+        ),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (badgeText != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFA0522D),
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Text(
-                title,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                badgeText,
+                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
               ),
             ),
-            if (badgeText != null)
-              Container(
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade400,
-                  shape: BoxShape.circle,
-                ),
-                child: Text(
-                  badgeText,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
-              ),
-            const SizedBox(width: 8),
-            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-          ],
-        ),
+          const SizedBox(width: 8),
+          const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    // chọn ảnh hiển thị
     ImageProvider? avatarImage;
-    Widget? avatarFallback;
-
-    if (kIsWeb) {
-      if (_webImageBytes != null) {
-        avatarImage = MemoryImage(_webImageBytes!);
-      } else if (widget.imageUrl != null) {
-        avatarImage = NetworkImage(widget.imageUrl!);
-      }
-    } else {
-      if (_localImagePath != null) {
-        // Use a placeholder/error image if the file doesn't exist
-        avatarImage = FileImage(File(_localImagePath!));
-      } else if (widget.imageUrl != null) {
-        avatarImage = NetworkImage(widget.imageUrl!);
-      }
-    }
-
-    // Fallback widget for CircleAvatar when no image is available
-    if (avatarImage == null) {
-      avatarFallback = Text(
-        widget.username.isNotEmpty ? widget.username[0].toUpperCase() : "U",
-        style: const TextStyle(fontSize: 40, color: Colors.white),
-      );
+    if (kIsWeb && _webImageBytes != null) {
+      avatarImage = MemoryImage(_webImageBytes!);
+    } else if (_localImagePath != null) {
+      avatarImage = FileImage(File(_localImagePath!));
+    } else if (widget.imageUrl != null) {
+      avatarImage = NetworkImage(widget.imageUrl!);
     }
 
     return Scaffold(
-      // AppBar Tùy chỉnh
-      appBar: AppBar(
-        // Loại bỏ title mặc định, sử dụng PreferredSize cho layout tùy chỉnh
-        automaticallyImplyLeading: false, // Loại bỏ nút back mặc định
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF4C86E8), Color(0xFF6A9BFD)], // Màu xanh dương
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Icon(Icons.menu, color: Colors.white), // Menu Icon
-                  TextButton(
-                    onPressed: _chooseImage,
-                    child: const Text(
-                      "Edit",
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
+      backgroundColor: kzoneBeige,
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          // 👇 Header với hiệu ứng dải màu Nâu sang trọng
+          SliverAppBar(
+            expandedHeight: 220,
+            pinned: true,
+            automaticallyImplyLeading: false,
+            backgroundColor: kzoneBrown,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [kzoneBrown, kzoneLightBrown],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        toolbarHeight: 56, // Giữ chiều cao tiêu chuẩn
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Header Profile (Avatar, Tên, Email)
-            Container(
-              height: 200, // Chiều cao tối ưu cho phần header
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF4C86E8), Color(0xFF6A9BFD)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
                 ),
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(0)), // Giữ bo góc nếu cần, ở đây tôi loại bỏ để khớp với AppBar
-              ),
-              child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    const SizedBox(height: 40),
                     Stack(
                       alignment: Alignment.bottomRight,
                       children: [
-                        CircleAvatar(
-                          radius: 45,
-                          backgroundColor: Colors.white, // Vòng ngoài màu trắng
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
                           child: CircleAvatar(
-                            radius: 43,
-                            backgroundColor: Colors.blue.shade700,
+                            radius: 45,
+                            backgroundColor: kzoneBeige,
                             backgroundImage: avatarImage,
-                            child: avatarFallback,
+                            child: avatarImage == null 
+                              ? Text(widget.username.isNotEmpty ? widget.username[0].toUpperCase() : "U",
+                                  style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: kzoneBrown))
+                              : null,
                           ),
                         ),
-                        // Green Checkmark Icon (Đã xác minh)
-                        Positioned(
-                          right: 0,
+                        GestureDetector(
+                          onTap: _showImageSourceDialog,
                           child: Container(
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.check_circle,
-                              color: Color(0xFF4CD964), // Màu xanh lá cây của checkmark
-                              size: 20,
-                            ),
+                            padding: const EdgeInsets.all(6),
+                            decoration: const BoxDecoration(color: Color(0xFFA0522D), shape: BoxShape.circle),
+                            child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    Text(
-                      widget.username,
-                      style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white),
-                    ),
-                    Text(
-                      widget.email,
-                      style: TextStyle(
-                          fontSize: 14, color: Colors.white.withOpacity(0.8)),
-                    ),
+                    const SizedBox(height: 12),
+                    Text(widget.username, 
+                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                    Text(widget.email, 
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13)),
                   ],
                 ),
               ),
             ),
-            
-            // Body - Menu Items
-            Container(
-              color: const Color(0xFFF7F7F7), // Màu nền nhẹ cho các mục
-              child: ListView(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(), // Vô hiệu hóa cuộn bên trong
+          ),
+
+          // 👇 Danh sách Menu chức năng
+          SliverToBoxAdapter(
+            child: Container(
+              margin: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 20, offset: const Offset(0, 10))
+                ],
+              ),
+              child: Column(
                 children: [
-                  // My Profile
+                  const SizedBox(height: 10),
                   _buildProfileMenuItem(
-                    icon: Icons.person_outline,
-                    title: "My Profile",
-                    onTap: () {
-                      // Xử lý khi nhấn My Profile
-                    },
+                    icon: Icons.person_outline_rounded,
+                    title: "Thông tin cá nhân",
+                    onTap: () {},
                   ),
-                  const Divider(height: 1, indent: 20, endIndent: 20, color: Color(0xFFE0E0E0)),
-
-                  // Messages
+                  const Divider(indent: 70, endIndent: 20, height: 1),
                   _buildProfileMenuItem(
-                    icon: Icons.email_outlined,
-                    title: "Messages",
-                    badgeText: "2", // Số lượng tin nhắn chưa đọc
-                    onTap: () {
-                      // Xử lý khi nhấn Messages
-                    },
+                    icon: Icons.shopping_bag_outlined,
+                    title: "Đơn hàng của tôi",
+                    badgeText: "2",
+                    onTap: () {},
                   ),
-                  const Divider(height: 1, indent: 20, endIndent: 20, color: Color(0xFFE0E0E0)),
-
-                  // Settings
+                  const Divider(indent: 70, endIndent: 20, height: 1),
+                  _buildProfileMenuItem(
+                    icon: Icons.favorite_border_rounded,
+                    title: "Danh sách yêu thích",
+                    onTap: () {},
+                  ),
+                  const Divider(indent: 70, endIndent: 20, height: 1),
                   _buildProfileMenuItem(
                     icon: Icons.settings_outlined,
-                    title: "Settings",
-                    onTap: () {
-                      // Xử lý khi nhấn Settings
-                    },
+                    title: "Cài đặt ứng dụng",
+                    onTap: () {},
                   ),
-                  const Divider(height: 1, indent: 20, endIndent: 20, color: Color(0xFFE0E0E0)),
-
-                  // Terms & Privacy Policy
+                  const Divider(indent: 70, endIndent: 20, height: 1),
                   _buildProfileMenuItem(
                     icon: Icons.verified_user_outlined,
-                    title: "Terms & Privacy Policy",
-                    onTap: () {
-                      // Xử lý khi nhấn Terms & Privacy Policy
-                    },
+                    title: "Chính sách bảo mật",
+                    onTap: () {},
                   ),
-                  const Divider(height: 1, indent: 20, endIndent: 20, color: Color(0xFFE0E0E0)),
-
-                  const SizedBox(height: 20),
-
-                  // Logout Button (Layout giống ListTile)
-                  InkWell(
-                    onTap: _handleLogout,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
-                      child: Row(
-                        children: [
-                          Icon(Icons.logout, size: 24, color: Colors.red.shade700),
-                          const SizedBox(width: 20),
-                          Text(
-                            "Logout",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.red.shade700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  const SizedBox(height: 10),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+
+          // 👇 Nút Đăng xuất
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: TextButton(
+                onPressed: _handleLogout,
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.logout_rounded, color: Colors.red.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Text("Đăng xuất tài khoản", 
+                      style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.bold, fontSize: 15)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SliverPadding(padding: EdgeInsets.only(bottom: 40)),
+        ],
       ),
     );
   }

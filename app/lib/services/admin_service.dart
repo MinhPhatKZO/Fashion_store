@@ -1,16 +1,20 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart'; // 👇 Bổ sung thư viện này để dùng debugPrint và kIsWeb
 import '../models/admin_statistics.dart';
 
 class AdminService {
-  static const String baseUrl = 'http://localhost:5000/api/admin';
+  // 👇 Đã sửa lại baseUrl tự động tương thích với cả Web và Máy ảo Android
+  static String get baseUrl => kIsWeb 
+      ? 'http://localhost:5000/api/admin' 
+      : 'http://10.0.2.2:5000/api/admin';
 
   // Lấy token từ SharedPreferences
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
-    print('TOKEN = $token'); // Debug token
+    debugPrint('TOKEN = $token'); // Đổi thành debugPrint
     return token;
   }
 
@@ -29,7 +33,7 @@ class AdminService {
       final headers = await _getHeaders();
       final response =
           await http.get(Uri.parse('$baseUrl/statistics'), headers: headers);
-      print('STATUS: ${response.statusCode}, BODY: ${response.body}');
+      debugPrint('STATUS: ${response.statusCode}, BODY: ${response.body}');
       if (response.statusCode == 200) {
         return AdminStatistics.fromJson(jsonDecode(response.body));
       } else {
@@ -47,7 +51,7 @@ class AdminService {
       String url = '$baseUrl/users';
       if (role != null) url += '?role=$role';
       final response = await http.get(Uri.parse(url), headers: headers);
-      print('STATUS: ${response.statusCode}, BODY: ${response.body}');
+      debugPrint('STATUS: ${response.statusCode}, BODY: ${response.body}');
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
         return data.map((e) => UserModel.fromJson(e)).toList();
@@ -66,7 +70,7 @@ class AdminService {
       headers: headers,
       body: jsonEncode({'role': newRole}),
     );
-    print('STATUS: ${response.statusCode}, BODY: ${response.body}');
+    debugPrint('STATUS: ${response.statusCode}, BODY: ${response.body}');
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return UserModel.fromJson(data['user']);
@@ -79,7 +83,7 @@ class AdminService {
     final headers = await _getHeaders();
     final response =
         await http.delete(Uri.parse('$baseUrl/users/$userId'), headers: headers);
-    print('STATUS: ${response.statusCode}, BODY: ${response.body}');
+    debugPrint('STATUS: ${response.statusCode}, BODY: ${response.body}');
     if (response.statusCode != 200) {
       throw Exception('Failed to delete user');
     }
@@ -90,7 +94,7 @@ class AdminService {
     final headers = await _getHeaders();
     final response =
         await http.get(Uri.parse('$baseUrl/promotions'), headers: headers);
-    print('STATUS: ${response.statusCode}, BODY: ${response.body}');
+    debugPrint('STATUS: ${response.statusCode}, BODY: ${response.body}');
     if (response.statusCode == 200) {
       final List data = jsonDecode(response.body);
       return data.map((e) => PromotionModel.fromJson(e)).toList();
@@ -106,7 +110,7 @@ class AdminService {
       headers: headers,
       body: jsonEncode(promotion.toJson()),
     );
-    print('STATUS: ${response.statusCode}, BODY: ${response.body}');
+    debugPrint('STATUS: ${response.statusCode}, BODY: ${response.body}');
     if (response.statusCode == 201) {
       return PromotionModel.fromJson(jsonDecode(response.body));
     } else {
@@ -121,7 +125,7 @@ class AdminService {
       headers: headers,
       body: jsonEncode(promotion.toJson()),
     );
-    print('STATUS: ${response.statusCode}, BODY: ${response.body}');
+    debugPrint('STATUS: ${response.statusCode}, BODY: ${response.body}');
     if (response.statusCode == 200) {
       return PromotionModel.fromJson(jsonDecode(response.body));
     } else {
@@ -135,7 +139,7 @@ class AdminService {
       Uri.parse('$baseUrl/promotions/$id/toggle'),
       headers: headers,
     );
-    print('STATUS: ${response.statusCode}, BODY: ${response.body}');
+    debugPrint('STATUS: ${response.statusCode}, BODY: ${response.body}');
     if (response.statusCode == 200) {
       return PromotionModel.fromJson(jsonDecode(response.body));
     } else {
@@ -147,7 +151,7 @@ class AdminService {
     final headers = await _getHeaders();
     final response =
         await http.delete(Uri.parse('$baseUrl/promotions/$id'), headers: headers);
-    print('STATUS: ${response.statusCode}, BODY: ${response.body}');
+    debugPrint('STATUS: ${response.statusCode}, BODY: ${response.body}');
     if (response.statusCode != 200) {
       throw Exception('Failed to delete promotion');
     }
@@ -157,7 +161,7 @@ class AdminService {
   Future<List<OrderModel>> getOrders() async {
     final headers = await _getHeaders();
     final response = await http.get(Uri.parse('$baseUrl/orders'), headers: headers);
-    print('STATUS: ${response.statusCode}, BODY: ${response.body}');
+    debugPrint('STATUS: ${response.statusCode}, BODY: ${response.body}');
     if (response.statusCode == 200) {
       final List data = jsonDecode(response.body);
       return data.map((e) => OrderModel.fromJson(e)).toList();
@@ -173,7 +177,7 @@ class AdminService {
       headers: headers,
       body: jsonEncode({'status': status}),
     );
-    print('STATUS: ${response.statusCode}, BODY: ${response.body}');
+    debugPrint('STATUS: ${response.statusCode}, BODY: ${response.body}');
     if (response.statusCode == 200) {
       return OrderModel.fromJson(jsonDecode(response.body));
     } else {

@@ -19,18 +19,25 @@ class _LockUnlockAccountScreenState extends State<LockUnlockAccountScreen> {
     try {
       _users = await _service.getUsers();
     } catch (e) {
+      if (!mounted) return; // Thêm check mounted
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
-      setState(() => _loading = false);
+      if (mounted) { // Thêm check mounted trước khi setState
+        setState(() => _loading = false);
+      }
     }
   }
 
   Future<void> _deleteUser(String id) async {
     try {
       await _service.deleteUser(id);
+      
+      if (!mounted) return; // Thêm check mounted trước khi dùng context
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User deleted')));
+      
       await _loadUsers();
     } catch (e) {
+      if (!mounted) return; // Thêm check mounted
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }

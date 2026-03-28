@@ -1,10 +1,14 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart'; // Thêm để dùng debugPrint và kIsWeb
 import 'package:http/http.dart' as http;
 import '../models/order.dart';
 import '../utils/auth_token.dart';
 
 class OrderService {
-  final String baseUrl = "http://192.168.2.42:5000/api/orders";
+  // 👇 Cập nhật baseUrl để tự động nhận diện môi trường, tránh lỗi kết nối gây văng App
+  static String get _baseUrl => kIsWeb 
+      ? "http://localhost:5000/api/orders" 
+      : "http://10.0.2.2:5000/api/orders";
 
   Future<List<OrderModel>> getTrackingOrders({List<String>? statuses}) async {
     final token = await AuthToken.getToken();
@@ -15,7 +19,7 @@ class OrderService {
 
     for (String st in statuses) {
       try {
-        final url = Uri.parse("$baseUrl?status=$st");
+        final url = Uri.parse("$_baseUrl?status=$st");
         final res = await http.get(
           url,
           headers: {
@@ -30,7 +34,8 @@ class OrderService {
           result.addAll(list.map((e) => _parseOrder(e)));
         }
       } catch (e) {
-        print("getTrackingOrders error: $e");
+        // 👇 Đã sửa: dùng debugPrint thay vì print
+        debugPrint("getTrackingOrders error: $e");
       }
     }
 
@@ -41,7 +46,7 @@ class OrderService {
     final token = await AuthToken.getToken();
     if (token == null) throw Exception("Token expired");
 
-    final url = Uri.parse("$baseUrl/$id");
+    final url = Uri.parse("$_baseUrl/$id");
     final res = await http.get(
       url,
       headers: {

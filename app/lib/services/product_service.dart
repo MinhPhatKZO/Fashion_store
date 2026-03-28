@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'; // Bỏ 'show kIsWeb' để dùng được cả debugPrint
 import 'package:http/http.dart' as http;
 
 import '../models/product.dart';
@@ -24,19 +24,19 @@ class ProductService {
     final url = Uri.parse('$baseUrl/api/products?limit=$limit');
 
     try {
-      print('Fetching products from: $url');
+      debugPrint('Fetching products from: $url');
       final response = await http.get(url);
 
-      print('Response status: ${response.statusCode}');
+      debugPrint('Response status: ${response.statusCode}');
 
       if (response.statusCode != 200) {
-        print('Response body: ${response.body}');
+        debugPrint('Response body: ${response.body}');
         throw Exception(
           'Failed to load products (status: ${response.statusCode})',
         );
       }
 
-      print(
+      debugPrint(
         'Response body preview: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}...',
       );
 
@@ -56,34 +56,34 @@ class ProductService {
       }
 
       if (productsList.isEmpty) {
-        print(
+        debugPrint(
           'Unexpected/empty products payload. Data type: ${data.runtimeType}',
         );
-        print('Data preview keys: ${data is Map ? data.keys : "N/A"}');
+        debugPrint('Data preview keys: ${data is Map ? data.keys : "N/A"}');
         if (data is Map) {
           productsList = [data];
         }
       }
-      print('Successfully loaded ${productsList.length} products');
+      debugPrint('Successfully loaded ${productsList.length} products');
 
       final products = <Product>[];
       for (int i = 0; i < productsList.length; i++) {
         try {
           final product = Product.fromJson(productsList[i]);
           products.add(product);
-          print(
+          debugPrint(
             'Product $i: ${product.name} - Image: ${product.displayImage}',
           );
         } catch (e) {
-          print('Error parsing product $i: $e');
-          print('Product data: ${productsList[i]}');
+          debugPrint('Error parsing product $i: $e');
+          debugPrint('Product data: ${productsList[i]}');
         }
       }
 
       return products;
     } catch (e, stackTrace) {
-      print('Error fetching products: $e');
-      print('Stack trace: $stackTrace');
+      debugPrint('Error fetching products: $e');
+      debugPrint('Stack trace: $stackTrace');
       rethrow;
     }
   }
@@ -104,7 +104,7 @@ class ProductService {
       final data = json.decode(response.body);
       return Product.fromJson(data);
     } catch (e) {
-      print('Error fetching product: $e');
+      debugPrint('Error fetching product: $e');
       rethrow;
     }
   }
@@ -124,7 +124,7 @@ class ProductService {
       final List productsList = data['products'] ?? data;
       return productsList.map((e) => Product.fromJson(e)).toList();
     } catch (e) {
-      print('Error fetching featured products: $e');
+      debugPrint('Error fetching featured products: $e');
       rethrow;
     }
   }
@@ -140,7 +140,7 @@ class ProductService {
             categoryName.toLowerCase().contains('all products'));
 
     if (isFetchingAll) {
-      print('Calling getAllProducts() as no specific category filter was provided.');
+      debugPrint('Calling getAllProducts() as no specific category filter was provided.');
       return getAllProducts(limit: limit);
     }
 
@@ -148,7 +148,7 @@ class ProductService {
       final url = Uri.parse(
         '$baseUrl/api/products/category/$categoryId?limit=$limit',
       );
-      print('Fetching products by category ID: $url');
+      debugPrint('Fetching products by category ID: $url');
 
       try {
         final response = await http.get(url);
@@ -163,12 +163,12 @@ class ProductService {
         final List productsList = data['products'] ?? data;
         return productsList.map((e) => Product.fromJson(e)).toList();
       } catch (e) {
-        print('Error fetching products by category ID: $e');
+        debugPrint('Error fetching products by category ID: $e');
         rethrow;
       }
     }
 
-    print('Cannot filter by Category Name "$categoryName" without categoryId.');
+    debugPrint('Cannot filter by Category Name "$categoryName" without categoryId.');
     return [];
   }
 
@@ -190,7 +190,7 @@ class ProductService {
       final List productsList = data['products'] ?? data;
       return productsList.map((e) => Product.fromJson(e)).toList();
     } catch (e) {
-      print('Error fetching products by brand: $e');
+      debugPrint('Error fetching products by brand: $e');
       rethrow;
     }
   }
@@ -210,7 +210,7 @@ class ProductService {
       final List productsList = data['products'] ?? data;
       return productsList.map((e) => Product.fromJson(e)).toList();
     } catch (e) {
-      print('Error searching products: $e');
+      debugPrint('Error searching products: $e');
       rethrow;
     }
   }

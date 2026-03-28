@@ -31,13 +31,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Future<void> _loadOrder() async {
     try {
       final res = await _orderService.getOrderById(widget.orderId);
+      if (!mounted) return;
       setState(() {
         order = res;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
-      print(" Lỗi load order: $e");
+      debugPrint("Lỗi load order: $e"); // Đã đổi sang debugPrint
     }
   }
 
@@ -80,7 +82,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
-  // Widget hiển thị một mục chi tiết (Label/Value)
   Widget _buildDetailRow(String label, String value, {TextStyle? valueStyle, Color? labelColor}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -108,7 +109,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  // Widget hiển thị tiêu đề phần (Header Section)
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0, top: 16.0),
@@ -119,7 +119,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  // Widget hiển thị trạng thái đơn hàng nổi bật
   Widget _buildStatusSection(String status) {
     final statusText = _getStatusText(status);
     final statusColor = _getStatusColor(status);
@@ -155,16 +154,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  // Widget hiển thị chi tiết sản phẩm trong danh sách
   Widget _buildProductItem(OrderItem item) {
-    final double itemTotal = item.subtotal;
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Placeholder Ảnh sản phẩm
           Container(
             width: 50,
             height: 50,
@@ -185,15 +180,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
           ),
           Text(
-            "${itemTotal.toStringAsFixed(0)}đ",
+            "${item.subtotal.toStringAsFixed(0)}đ",
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ],
       ),
     );
   }
-
-  // --- WIDGET BUILD CHÍNH ---
 
   @override
   Widget build(BuildContext context) {
@@ -203,9 +196,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       );
     }
 
-    // ⚠️ KHỐI CODE ĐÃ SỬA LỖI CONST TRIỆT ĐỂ Ở ĐÂY
     if (order == null) {
-      return Scaffold( // Bỏ const ở Scaffold
+      return Scaffold(
         appBar: AppBar(title: const Text("Chi tiết đơn hàng")),
         body: const Center(child: Text("Không thể tải thông tin đơn hàng")),
       );
@@ -214,14 +206,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Đơn ${order!.orderCode}"),
-        elevation: 1, // Thêm elevation nhẹ cho AppBar
+        elevation: 1,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Trạng thái đơn hàng (Nổi bật)
             _buildStatusSection(order!.status),
 
             // 2. Chi tiết Sản phẩm
@@ -229,7 +220,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), spreadRadius: 1, blurRadius: 5)],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withValues(alpha: 0.1), // Đã đổi withOpacity sang withValues
+                    spreadRadius: 1, 
+                    blurRadius: 5
+                  )
+                ],
               ),
               padding: const EdgeInsets.all(16.0),
               margin: const EdgeInsets.only(bottom: 16),
@@ -250,7 +247,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), spreadRadius: 1, blurRadius: 5)],
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withValues(alpha: 0.1), // Đã đổi withValues
+                      spreadRadius: 1, 
+                      blurRadius: 5
+                    )
+                  ],
                 ),
                 padding: const EdgeInsets.all(16.0),
                 margin: const EdgeInsets.only(bottom: 16),
@@ -271,7 +274,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), spreadRadius: 1, blurRadius: 5)],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withValues(alpha: 0.1), // Đã đổi withValues
+                    spreadRadius: 1, 
+                    blurRadius: 5
+                  )
+                ],
               ),
               padding: const EdgeInsets.all(16.0),
               margin: const EdgeInsets.only(bottom: 24),
@@ -293,7 +302,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ),
             ),
             
-            // 5. Nút Thanh toán (chỉ hiển thị khi status là "pending")
+            // 5. Nút Thanh toán
             if (order!.status == "pending") ...[
               const Padding(
                 padding: EdgeInsets.only(bottom: 10),

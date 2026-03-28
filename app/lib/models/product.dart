@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'; // Đã bỏ 'show kIsWeb' để dùng được cả debugPrint
 import '../assets/images.dart';
 
 class Product {
@@ -32,12 +32,12 @@ class Product {
   String get displayImage {
     if (images.isEmpty) {
       final fallback = AppImages.getProductImage(id, fallback: AppImages.placeholder);
-      print('🖼️ Product $name: No images, using fallback: $fallback');
+      debugPrint('🖼️ Product $name: No images, using fallback: $fallback'); // Đổi thành debugPrint
       return fallback;
     }
     
     final result = _buildImageUrl(images.first);
-    print('🖼️ Product $name: ${images.first} → $result');
+    debugPrint('🖼️ Product $name: ${images.first} → $result'); // Đổi thành debugPrint
     return result;
   }
 
@@ -143,8 +143,8 @@ class Product {
     return Product(
       id: _extractId(json['_id']),
       name: json['name']?.toString() ?? '',
-      categoryId: _extractId(json['categoryId']) ?? '',
-      brandId: _extractId(json['brandId']) ?? '',
+      categoryId: _extractId(json['categoryId']), // Đã bỏ phần ?? '' bị thừa
+      brandId: _extractId(json['brandId']),       // Đã bỏ phần ?? '' bị thừa
       price: _parseDouble(json['price']),
       originalPrice: json['originalPrice'] != null
           ? _parseDouble(json['originalPrice'])

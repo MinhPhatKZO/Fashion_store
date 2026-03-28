@@ -3,11 +3,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/auth/welcome_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
-import 'screens/home/home_screen.dart';
+import 'screens/home/screens/home_screen.dart';
 import 'screens/admin/admin_screen.dart';
 import 'screens/cart/cart_screen.dart';
 
-void main() {
+// 👇 1. Thêm async và WidgetsFlutterBinding.ensureInitialized()
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized(); 
   runApp(const FashionStoreApp());
 }
 
@@ -34,7 +36,10 @@ class FashionStoreApp extends StatelessWidget {
         '/register': (_) => const RegisterScreen(),
         '/home': (_) => const HomeScreen(),
         '/cart': (_) => const CartScreen(),
-        '/admin': (_) => const AdminScreen(),     },
+        '/admin': (_) => const AdminScreen(), 
+        // 👇 2. Lưu ý: Bạn cần tạo route cho '/seller' nếu không khi chuyển hướng sẽ bị Crash
+        // '/seller': (_) => const SellerScreen(), 
+      },
     );
   }
 }
@@ -61,6 +66,9 @@ class _AuthCheckState extends State<AuthCheck> {
     final token = prefs.getString("token");
     final userRole = prefs.getString("role");
 
+    // 👇 3. BẮT BUỘC: Kiểm tra widget còn hiển thị (mounted) không trước khi dùng setState hoặc Navigator sau lệnh 'await'
+    if (!mounted) return;
+
     setState(() {
       role = userRole;
       loading = false;
@@ -76,7 +84,7 @@ class _AuthCheckState extends State<AuthCheck> {
     if (userRole == 'admin') {
       Navigator.pushReplacementNamed(context, '/admin');
     } else if (userRole == 'seller') {
-      Navigator.pushReplacementNamed(context, '/seller');
+      Navigator.pushReplacementNamed(context, '/seller'); // Nhớ mở comment route '/seller' ở trên khi bạn có file nhé
     } else {
       Navigator.pushReplacementNamed(context, '/home');
     }
