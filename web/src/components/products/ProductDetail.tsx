@@ -2,16 +2,16 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Slider from "react-slick";
 import { useCart } from "../cart/CartContext";
+import Cookies from "js-cookie";
 import { 
   Star, ShoppingBag, Heart, Truck, ShieldCheck, 
   RotateCcw, ChevronRight, Minus, Plus, Share2 
 } from "lucide-react";
 
-// Import CSS slider
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
-// --- INTERFACES (Giữ nguyên) ---
+// --- INTERFACES ---
 interface Image { url?: string; alt?: string; }
 interface Brand { _id: string; name: string; logoUrl?: string; }
 interface Category { _id: string; name: string; }
@@ -27,6 +27,7 @@ interface ProductVariant {
 }
 interface Product {
   _id: string;
+  id?: string;
   name: string;
   price: number;
   stock: number;
@@ -118,11 +119,11 @@ const ProductDetail: React.FC = () => {
     fetchReviews();
   }, [id]);
 
-  // 👇 THÊM MỚI TẠI ĐÂY: THEO DÕI LƯỢT XEM SẢN PHẨM 👇
+  // GHI NHAN HANH VI CHO AI (TRAIN OFFLINE)
   useEffect(() => {
     const trackProductView = async () => {
       const token = localStorage.getItem("token");
-      if (!token || !id) return; // Chỉ lưu nếu user đã đăng nhập
+      if (!token || !id) return; 
 
       try {
         await fetch("http://localhost:5000/api/interactions", {
@@ -137,13 +138,46 @@ const ProductDetail: React.FC = () => {
           })
         });
       } catch (error) {
-        console.error("Lỗi ghi nhận lịch sử xem:", error);
+        console.error("Loi ghi nhan lich su xem:", error);
       }
     };
 
     trackProductView();
   }, [id]);
-  // 👆 KẾT THÚC THÊM MỚI 👆
+
+  // GHI NHO VAO COOKIE CHO AI (REAL-TIME) - DA THEM LOG VA TRY-CATCH
+  useEffect(() => {
+    console.log("[AI COOKIE LOG] Du lieu product hien tai:", product);
+
+    const productId = product?._id;
+
+    if (productId) {
+        console.log("[SUCCESS] Da tim thay ID san pham:", productId, "-> Bat dau luu vao Cookie.");
+        
+        let recentViews: string[] = [];
+        const recentViewsStr = Cookies.get('recent_views');
+        
+        if (recentViewsStr) {
+            try {
+                recentViews = JSON.parse(recentViewsStr);
+                if (!Array.isArray(recentViews)) recentViews = [];
+            } catch (e) {
+                console.warn("[WARNING] Cookie bi loi dinh dang, he thong tu dong tao lai mang moi.");
+                recentViews = [];
+            }
+        }
+
+        recentViews = recentViews.filter(itemId => itemId !== productId);
+        recentViews.unshift(productId);
+        recentViews = recentViews.slice(0, 5);
+
+        Cookies.set('recent_views', JSON.stringify(recentViews), { expires: 1, path: '/' });
+        
+        console.log("[COOKIE SAVED] Da luu thanh cong! Danh sach Cookie hien tai:", Cookies.get('recent_views'));
+    } else {
+        console.log("[SKIP] Chua co ID san pham, bo qua viec luu Cookie.");
+    }
+  }, [product]);
 
   // --- HELPER FUNCTIONS ---
   const getImageUrl = (p?: Product, index: number = 0) => {
@@ -206,7 +240,6 @@ const ProductDetail: React.FC = () => {
     }, quantity);
     alert("Đã thêm vào giỏ hàng!");
 
-    // 👇 THÊM MỚI TẠI ĐÂY: THEO DÕI LƯỢT THÊM VÀO GIỎ HÀNG 👇
     const token = localStorage.getItem("token");
     if (token && product._id) {
       fetch("http://localhost:5000/api/interactions", {
@@ -221,7 +254,6 @@ const ProductDetail: React.FC = () => {
         })
       }).catch(err => console.log(err));
     }
-    // 👆 KẾT THÚC THÊM MỚI 👆
   };
 
   const handleSubmitReview = async (e: React.FormEvent) => {
@@ -285,7 +317,7 @@ const ProductDetail: React.FC = () => {
             
             {/* LEFT: IMAGE GALLERY */}
             <div className="lg:col-span-7 flex flex-col-reverse lg:flex-row gap-4">
-                {/* Thumbnails (Vertical on Desktop, Hidden on Mobile if needed or Horizontal) */}
+                {/* Thumbnails */}
                 <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto lg:h-[600px] scrollbar-hide py-2 lg:py-0">
                     {getAllImages.map((img, idx) => (
                         <button 
@@ -305,7 +337,7 @@ const ProductDetail: React.FC = () => {
                 </div>
             </div>
 
-            {/* RIGHT: PRODUCT INFO (Sticky) */}
+            {/* RIGHT: PRODUCT INFO */}
             <div className="lg:col-span-5 lg:sticky lg:top-24 h-fit">
                 {/* Header Info */}
                 <div className="mb-6 border-b border-gray-100 pb-6">
@@ -335,7 +367,6 @@ const ProductDetail: React.FC = () => {
                                 <div className="flex flex-wrap gap-2">
                                     {uniqueAttributes.allSizes.map(size => {
                                         const isSelected = size === selectedSize;
-                                        // Check availability logic can be added here
                                         return (
                                             <button
                                                 key={size}
@@ -360,7 +391,7 @@ const ProductDetail: React.FC = () => {
                                             onClick={() => handleSelectVariant("color", color)}
                                             className={`w-8 h-8 rounded-full border-2 p-0.5 relative transition-all ${color === selectedColor ? 'border-black' : 'border-transparent hover:border-gray-300'}`}
                                         >
-                                            <div className="w-full h-full rounded-full border border-gray-100 shadow-sm" style={{ backgroundColor: color.toLowerCase() }}></div> {/* Simple color map */}
+                                            <div className="w-full h-full rounded-full border border-gray-100 shadow-sm" style={{ backgroundColor: color.toLowerCase() }}></div>
                                         </button>
                                     ))}
                                 </div>
@@ -371,7 +402,6 @@ const ProductDetail: React.FC = () => {
 
                 {/* Actions */}
                 <div className="flex flex-col gap-4 mb-8">
-                    {/* Quantity & Add to Cart Row */}
                     <div className="flex gap-4">
                         <div className="flex items-center border border-gray-300 rounded-lg h-12 w-32">
                             <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-10 h-full flex items-center justify-center hover:bg-gray-50 rounded-l-lg"><Minus className="w-4 h-4"/></button>
@@ -426,7 +456,7 @@ const ProductDetail: React.FC = () => {
             </div>
         </div>
 
-        {/* --- TABS SECTION (Description & Reviews) --- */}
+        {/* --- TABS SECTION --- */}
         <div className="mt-20 border-t border-gray-200 pt-10">
             <div className="flex justify-center gap-8 mb-8 border-b border-gray-200">
                 <button 
@@ -446,7 +476,6 @@ const ProductDetail: React.FC = () => {
             <div className="max-w-4xl mx-auto">
                 {activeTab === 'desc' && (
                     <div className="prose max-w-none text-gray-700 leading-relaxed">
-                         {/* Nếu description là HTML thì dùng dangerouslySetInnerHTML, nếu text thường thì để thẻ p */}
                          <p className="whitespace-pre-line">{product.description}</p>
                     </div>
                 )}

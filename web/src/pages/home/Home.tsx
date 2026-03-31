@@ -159,7 +159,8 @@ const Home: React.FC = () => {
         
         {featuredProducts?.length > 0 && <HomeFlashSale products={featuredProducts} />}
 
-        <RecommendationSection products={recommendedProducts} />
+        {/* 👇 ĐÃ SỬA LỖI Ở ĐÂY 👇 */}
+        <RecommendationSection fallbackProducts={recommendedProducts} />
         
         {brands?.length > 0 && <HomeBrands brands={brands} />}
         

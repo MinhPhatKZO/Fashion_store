@@ -7,6 +7,7 @@ from lightfm import LightFM
 from lightfm.data import Dataset
 import ollama  
 import re  
+from bson.objectid import ObjectId # NÂNG CẤP: Thêm ObjectId để truy vấn DB
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -18,7 +19,7 @@ model = None
 dataset = None
 
 # ==========================================
-# PHẦN 1: MÔ HÌNH GỢI Ý SẢN PHẨM (LIGHTFM)
+# PHẦN 1: MÔ HÌNH GỢI Ý TRUYỀN THỐNG (LIGHTFM)
 # ==========================================
 @app.post("/train")
 def train_model():
@@ -47,7 +48,7 @@ def train_model():
 
     try:
         model.fit(interactions_matrix, epochs=10, num_threads=1)
-        print("CHÚC MỪNG! LIGHTFM ĐÃ HỌC XONG TRÊN MÁY BẠN.")
+        print(" CHÚC MỪNG! LIGHTFM ĐÃ HỌC XONG TRÊN MÁY BẠN.")
         return {"status": "success", "message": "LightFM đã huấn luyện thành công!"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -67,7 +68,79 @@ def get_recommendations(user_id: str, limit: int = 10):
         return {"message": "User mới, chưa có dữ liệu gợi ý."}
 
 # ==========================================
-# PHẦN 2: CHATBOT TƯ VẤN THÔNG MINH (QWEN2:1.5B)
+# PHẦN 2: [NÂNG CẤP] GỢI Ý REAL-TIME THEO SESSION
+# ==========================================
+class SessionRequest(BaseModel):
+    recent_item_ids: list[str]  # Mảng ID gửi từ Cookie/LocalStorage lên
+    limit: int = 10
+
+@app.post("/recommend/session")
+def session_based_recommendation(req: SessionRequest):
+    """
+    GỢI Ý REAL-TIME: Bắt mạch mục đích tức thời của khách dựa trên những gì họ vừa xem.
+    Thuật toán sẽ lấy "Trung bình cộng" gu thời trang của các món khách vừa lướt.
+    """
+    if model is None: 
+        return {"success": False, "message": "Chưa train model."}
+    
+    try:
+        item_map = dataset.mapping()[2]
+        valid_internal_ids = []
+        
+        # 1. Lọc ra những món trong Cookie mà AI đã từng học
+        for p_id in req.recent_item_ids:
+            if p_id in item_map:
+                valid_internal_ids.append(item_map[p_id])
+                
+        if not valid_internal_ids:
+            return {"success": False, "message": "Sản phẩm quá mới hoặc khách chưa xem gì."}
+
+        # 2. Rút trích Não bộ AI (Item Embeddings)
+        _, item_embeddings = model.get_item_representations()
+        
+        # 3. TÍNH TOÁN "MỤC ĐÍCH HIỆN TẠI"
+        # Trộn (Trung bình cộng) đặc điểm các món vừa xem để tạo ra Tọa độ ý định
+        recent_embeddings = item_embeddings[valid_internal_ids]
+        current_intent_vector = np.mean(recent_embeddings, axis=0)
+
+        # 4. Quét kho hàng tìm món hợp với "Tọa độ ý định" này nhất
+        scores = item_embeddings.dot(current_intent_vector)
+
+        # 5. Sắp xếp điểm và lọc kết quả
+        top_indices = np.argsort(-scores)
+        inv_map = {v: k for k, v in item_map.items()}
+        
+        suggested_products = []
+        count = 0
+        
+        for idx in top_indices:
+            p_id_str = inv_map[idx]
+            # Loại trừ: Không gợi ý lại đúng những cái khách ĐÃ có trong lịch sử (Cookie)
+            if p_id_str not in req.recent_item_ids:
+                p = db.products.find_one({"_id": ObjectId(p_id_str)})
+                if p:
+                    img_url = p["images"][0].get("url", "") if p.get("images") and len(p["images"]) > 0 else p.get("image", "")
+                    suggested_products.append({
+                        "_id": str(p["_id"]),
+                        "name": p.get("name"),
+                        "price": p.get("price"),
+                        "image": img_url
+                    })
+                    count += 1
+            if count >= req.limit:
+                break
+
+        return {
+            "success": True, 
+            "recommendations": suggested_products
+        }
+
+    except Exception as e:
+        print(f"Lỗi Session Recommend: {e}")
+        return {"success": False, "message": str(e)}
+
+# ==========================================
+# PHẦN 3: CHATBOT TƯ VẤN THÔNG MINH (QWEN2:1.5B)
 # ==========================================
 class ChatRequest(BaseModel):
     message: str
@@ -98,7 +171,6 @@ def chat_with_llama(req: ChatRequest):
                 query["name"] = {"$regex": "áo|quần|váy|giày", "$options": "i"} 
         else:
             # LUỒNG 2: TÌM CHÍNH XÁC MÓN KHÁCH GỌI
-            # Đã thêm rất nhiều từ thừa vào "thùng rác"
             stop_words = {"cho", "mình", "tôi", "muốn", "xem", "mua", "tìm", "kiếm", "cần", "có", "không", "một", "cái", "chiếc", "những", "các", "nhé", "với", "ạ", "thử", "hỏi", "bạn", "shop", "ơi", "lấy", "đây", "giúp", "về", "đồ", "nào", "gì", "là", "này"}
             words = msg_lower.split()
             keywords = [w for w in words if w not in stop_words]
@@ -106,7 +178,6 @@ def chat_with_llama(req: ChatRequest):
             search_term = " ".join(keywords)
             
             if keywords:
-                # Bắt buộc tên sản phẩm phải chứa TẤT CẢ các từ khóa
                 query["$and"] = [{"name": {"$regex": k, "$options": "i"}} for k in keywords]
 
         # 2. TRUY VẤN DATABASE
@@ -145,17 +216,17 @@ def chat_with_llama(req: ChatRequest):
                 system_prompt = f"Bạn là lễ tân KZONE. Khách tìm '{search_term}' và CÓ HÀNG. Lệnh: Trả lời đúng 1 câu duy nhất vui vẻ báo có hàng và mời xem ảnh."
 
         # 5. GỌI OLLAMA (CÓ TRANG BỊ VŨ KHÍ KHÓA MÕM)
-        print("AI đang suy nghĩ...")
+        print("🤖 AI đang suy nghĩ...")
         response = ollama.chat(model='qwen2:1.5b', messages=[
             {'role': 'system', 'content': system_prompt},
             {'role': 'user', 'content': req.message}
         ], options={
-            "temperature": 0.2,   # Mức độ sáng tạo siêu thấp -> Chống bịa chuyện, nói nhảm
-            "num_predict": 50     # Giới hạn số chữ sinh ra tối đa (khoảng 1 câu rưỡi) -> Cấm viết đoạn văn dài
+            "temperature": 0.2, 
+            "num_predict": 50   
         })
 
         reply_text = response['message']['content']
-        print(f"AI trả lời:\n{reply_text}")
+        print(f" AI trả lời:\n{reply_text}")
         
         return {
             "success": True, 
@@ -164,5 +235,5 @@ def chat_with_llama(req: ChatRequest):
         }
 
     except Exception as e:
-        print(f"Lỗi Chatbot: {e}")
+        print(f" Lỗi Chatbot: {e}")
         return {"success": False, "reply": "Xin lỗi, hiện tại trợ lý AI đang bận. Bạn quay lại sau nhé!"}
