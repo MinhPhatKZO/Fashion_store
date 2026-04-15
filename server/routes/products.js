@@ -36,7 +36,7 @@ const toObjectIds = (arr) => {
 router.get("/", async (req, res) => {
   try {
     const {
-      // page, limit, // ❌ ĐÃ BỎ: Không lấy page và limit từ query nữa
+      // page, limit, //  ĐÃ BỎ: Không lấy page và limit từ query nữa
       category,
       brand,
       minPrice,
@@ -80,8 +80,8 @@ router.get("/", async (req, res) => {
     // 6. Thực thi query (LẤY HẾT - KHÔNG LIMIT)
     const products = await Product.find(query)
       .sort(sortCriteria)
-      // .skip(...) ❌ ĐÃ BỎ SKIP
-      // .limit(...) ❌ ĐÃ BỎ LIMIT
+      // .skip(...) ĐÃ BỎ SKIP
+      // .limit(...)  ĐÃ BỎ LIMIT
       .populate("categoryId", "name slug")
       .populate("brand", "name logoUrl country");
 

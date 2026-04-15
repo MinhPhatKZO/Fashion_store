@@ -5,7 +5,7 @@ const Order = require("../models/Order");
 const Product = require("../models/Product");
 const User = require("../models/User"); // Thêm User model để populate email
 const { auth } = require("../middleware/auth");
-// 👇 Import hàm gửi email
+//  Import hàm gửi email
 const { sendOrderEmail } = require("../utils/emailService");
 
 // Hàm lấy userId an toàn
@@ -80,7 +80,7 @@ async function createOrderInDB(req, paymentMethod, status) {
 
     await order.save();
 
-    // 👇 SAU KHI LƯU DB THÀNH CÔNG -> GỬI EMAIL XÁC NHẬN
+    //  SAU KHI LƯU DB THÀNH CÔNG -> GỬI EMAIL XÁC NHẬN
     // Cần lấy lại thông tin user để có email gửi đi
     try {
         const fullOrder = await Order.findById(order._id).populate("user", "email name");
@@ -97,7 +97,7 @@ async function createOrderInDB(req, paymentMethod, status) {
 
 /* =======================================================
    1. TẠO ĐƠN VNPAY
-   👉 Chỉ tạo DB status 'Pending_Payment'.
+    Chỉ tạo DB status 'Pending_Payment'.
 ======================================================= */
 router.post("/vnpay-order", auth, async (req, res) => {
   try {
@@ -113,7 +113,7 @@ router.post("/vnpay-order", auth, async (req, res) => {
 
 /* =======================================================
    2. TẠO ĐƠN MOMO
-   👉 Chỉ tạo DB status 'Pending_Payment'.
+   Chỉ tạo DB status 'Pending_Payment'.
 ======================================================= */
 router.post("/momo-order", auth, async (req, res) => {
   try {
@@ -128,7 +128,7 @@ router.post("/momo-order", auth, async (req, res) => {
 
 /* =======================================================
    3. TẠO ĐƠN COD
-   👉 Status 'Waiting_Approval' (Chờ duyệt)
+    Status 'Waiting_Approval' (Chờ duyệt)
 ======================================================= */
 router.post("/cod", auth, async (req, res) => {
   try {
@@ -221,7 +221,7 @@ router.put("/:id/cancel", auth, async (req, res) => {
   try {
     const { reason } = req.body;
     
-    // 👇 POPULATE USER ĐỂ CÓ EMAIL GỬI ĐI
+    //  POPULATE USER ĐỂ CÓ EMAIL GỬI ĐI
     const order = await Order.findOne({ _id: req.params.id, user: getUserId(req) })
         .populate("user", "email name");
 
@@ -237,7 +237,7 @@ router.put("/:id/cancel", auth, async (req, res) => {
 
     await order.save();
 
-    // 👇 Gửi email xác nhận hủy đơn
+    //  Gửi email xác nhận hủy đơn
     sendOrderEmail(order, "Cancelled").catch(err => 
         console.error("Lỗi gửi mail hủy đơn:", err.message)
     );

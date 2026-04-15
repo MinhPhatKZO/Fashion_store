@@ -9,7 +9,7 @@ const router = express.Router();
 const uploadDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
-  console.log('✅ Đã tạo thư mục uploads');
+  console.log('Đã tạo thư mục uploads');
 }
 
 // Cấu hình nơi lưu file upload
@@ -109,7 +109,7 @@ router.post('/multiple', upload.array('images', 10), (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('❌ Lỗi upload multiple:', error);
+    console.error('Lỗi upload multiple:', error);
     res.status(500).json({ 
       success: false,
       message: 'Lỗi khi upload ảnh',

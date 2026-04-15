@@ -49,9 +49,9 @@ router.get('/seller', auth, async (req, res) => {
     // 1. Lấy thông tin Seller
     const currentUser = await User.findById(userId);
     
-    // 🛡️ AUTO-FIX: Nếu User thiếu BrandId thì tự tìm lại (Giữ lại để an toàn)
+    //  AUTO-FIX: Nếu User thiếu BrandId thì tự tìm lại (Giữ lại để an toàn)
     if (currentUser && !currentUser.brandId) {
-        // console.log(`⚠️ Seller chưa có BrandId. Đang tìm lại...`);
+        // console.log(` Seller chưa có BrandId. Đang tìm lại...`);
         const myBrand = await Brand.findOne({ 
             $or: [{ userId: currentUser._id }, { sellerId: currentUser._id }] 
         });
@@ -66,7 +66,7 @@ router.get('/seller', auth, async (req, res) => {
 
     if (!currentUser || !currentUser.brandId) return res.status(200).json([]);
 
-    /* ⚠️ ĐOẠN CODE "VƠ VÉT" SẢN PHẨM ĐÃ ĐƯỢC TẮT ĐỂ AN TOÀN DỮ LIỆU
+    /* ĐOẠN CODE "VƠ VÉT" SẢN PHẨM ĐÃ ĐƯỢC TẮT ĐỂ AN TOÀN DỮ LIỆU
        (Chỉ bật lại khi cần sửa lỗi dữ liệu hàng loạt)
     */
     // const orphanProducts = await Product.countDocuments({ $or: [{ brand: { $exists: false } }, { brand: null }] });

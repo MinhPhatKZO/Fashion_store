@@ -4,7 +4,7 @@ const https = require('https');
 const Order = require('../models/Order'); // 👇 Import Order Model
 const { sendOrderEmail } = require('../utils/emailService'); // 👇 Import Email Service
 
-// 👇 Load biến môi trường
+//  Load biến môi trường
 require('dotenv').config();
 
 const router = express.Router();
@@ -21,7 +21,7 @@ const ipnUrl = process.env.MOMO_IPN_URL;
 ============================================= */
 router.post('/payment', async (req, res) => {
     try {
-        // 👉 Nhận thêm orderId từ Frontend (Là _id của đơn hàng trong DB)
+        //  Nhận thêm orderId từ Frontend (Là _id của đơn hàng trong DB)
         const { amount, orderInfo, orderId: dbOrderId } = req.body;
 
         if (!amount || !orderInfo || !dbOrderId) {
@@ -97,7 +97,7 @@ router.post('/payment', async (req, res) => {
 
 /* =============================================
    2. XỬ LÝ IPN (MoMo gọi về khi thanh toán xong)
-   👉 Cập nhật DB & Gửi Email tại đây
+   Cập nhật DB & Gửi Email tại đây
 ============================================= */
 router.post('/ipn', async (req, res) => {
     try {
@@ -123,7 +123,7 @@ router.post('/ipn', async (req, res) => {
 
         // 2. Kiểm tra kết quả thanh toán (resultCode = 0 là thành công)
         if (resultCode == 0) {
-            // ✅ THANH TOÁN THÀNH CÔNG
+            // THANH TOÁN THÀNH CÔNG
             
             // Tìm và cập nhật đơn hàng
             const updatedOrder = await Order.findByIdAndUpdate(orderId, {
@@ -134,16 +134,16 @@ router.post('/ipn', async (req, res) => {
             }, { new: true })
             .populate("user", "email name"); // Lấy email để gửi
 
-            console.log("✅ MoMo Success for Order:", orderId);
+            console.log("MoMo Success for Order:", orderId);
 
-            // 👇 GỬI EMAIL THÔNG BÁO
+            // GỬI EMAIL THÔNG BÁO
             if (updatedOrder) {
                 sendOrderEmail(updatedOrder, "Waiting_Approval").catch(err => 
                     console.error("MoMo IPN Send Mail Error:", err.message)
                 );
             }
         } else {
-            console.log("❌ MoMo Failed:", message);
+            console.log(" MoMo Failed:", message);
             // Có thể cập nhật trạng thái đơn hàng là Failed nếu muốn
         }
 

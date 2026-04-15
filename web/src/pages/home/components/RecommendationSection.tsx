@@ -44,7 +44,7 @@ const RecommendationSection: React.FC<Props> = ({ fallbackProducts = [] }) => {
                 }
 
             } catch (error) {
-                console.error("❌ Lỗi tải gợi ý từ Node.js:", error);
+                console.error(" Lỗi tải gợi ý từ Node.js:", error);
                 setProducts(fallbackProducts); 
             } finally {
                 setIsLoading(false);

@@ -6,7 +6,7 @@ const moment = require("moment");
 
 // Import Model Order
 const Order = require("../models/Order");
-// 👇 Import hàm gửi email
+//  Import hàm gửi email
 const { sendOrderEmail } = require("../utils/emailService");
 
 // --- CẤU HÌNH ---
@@ -97,7 +97,7 @@ router.get("/vnpay_return", async (req, res) => {
         const responseCode = vnp_Params["vnp_ResponseCode"];
         
         if (responseCode === "00") {
-            console.log("✅ VNPay Return: Success for Order", orderId);
+            console.log(" VNPay Return: Success for Order", orderId);
 
             // Cập nhật DB
             const updatedOrder = await Order.findByIdAndUpdate(orderId, {
@@ -117,14 +117,14 @@ router.get("/vnpay_return", async (req, res) => {
 
             return res.redirect(`http://localhost:3000/checkout/success?orderId=${orderId}`);
         } else {
-            console.log("❌ VNPay Return: Failed for Order", orderId);
+            console.log(" VNPay Return: Failed for Order", orderId);
             return res.redirect(`http://localhost:3000/checkout/error`);
         }
     } else {
         return res.redirect(`http://localhost:3000/checkout/error?msg=ChecksumFailed`);
     }
   } catch (error) {
-      console.error("❌ Lỗi xử lý vnpay_return:", error);
+      console.error("Lỗi xử lý vnpay_return:", error);
       return res.redirect(`http://localhost:3000/checkout/error?msg=ServerErr`);
   }
 });
@@ -163,7 +163,7 @@ router.get("/vnpay_ipn", async (req, res) => {
             }, { new: true })
             .populate("user", "email name");
 
-            console.log("✅ IPN: Updated Order Success:", orderId);
+            console.log(" IPN: Updated Order Success:", orderId);
 
             // 👇 GỬI EMAIL (Nếu Return URL chưa gửi kịp thì IPN sẽ gửi)
             if (updatedOrder) {
@@ -174,7 +174,7 @@ router.get("/vnpay_ipn", async (req, res) => {
 
             return res.status(200).json({ RspCode: "00", Message: "Success" });
         } else {
-            console.log("❌ IPN: Updated Order Failed:", orderId);
+            console.log(" IPN: Updated Order Failed:", orderId);
             return res.status(200).json({ RspCode: "00", Message: "Success" });
         }
     } else {

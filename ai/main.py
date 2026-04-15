@@ -216,7 +216,7 @@ def chat_with_llama(req: ChatRequest):
                 system_prompt = f"Bạn là lễ tân KZONE. Khách tìm '{search_term}' và CÓ HÀNG. Lệnh: Trả lời đúng 1 câu duy nhất vui vẻ báo có hàng và mời xem ảnh."
 
         # 5. GỌI OLLAMA (CÓ TRANG BỊ VŨ KHÍ KHÓA MÕM)
-        print("🤖 AI đang suy nghĩ...")
+        print(" AI đang suy nghĩ...")
         response = ollama.chat(model='qwen2:1.5b', messages=[
             {'role': 'system', 'content': system_prompt},
             {'role': 'user', 'content': req.message}

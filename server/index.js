@@ -80,7 +80,7 @@ io.on("connection", (socket) => {
       const newMessage = new Message({ conversationId: conversation._id, senderId, text });
       await newMessage.save();
     } catch (err) {
-      console.error("❌ Socket Chat Error:", err.message);
+      console.error(" Socket Chat Error:", err.message);
     }
   });
 
@@ -123,7 +123,7 @@ io.on("connection", (socket) => {
       io.to(roomName).emit("stream_ended");
       io.emit("stream_ended", roomName);
       if (roomViewers[roomName]) delete roomViewers[roomName]; 
-      console.log("❌ Stream Ended:", roomName);
+      console.log("Stream Ended:", roomName);
   });
 
   socket.on("live_chat_message", (data) => io.to(data.streamId).emit("new_comment", data));
@@ -177,9 +177,9 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Internal Server Error', error: err.message });
 });
 
-// 👇 THAY ĐỔI QUAN TRỌNG ĐỂ THÔNG MẠNG CHO MÁY ẢO
+//  THAY ĐỔI QUAN TRỌNG ĐỂ THÔNG MẠNG CHO MÁY ẢO
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server KZONE running on:`);
-  console.log(`🏠 Local: http://localhost:${PORT}`);
-  console.log(`📱 Emulator (Android): http://10.0.2.2:${PORT}`);
+  console.log(` Server KZONE running on:`);
+  console.log(` Local: http://localhost:${PORT}`);
+  console.log(` Emulator (Android): http://10.0.2.2:${PORT}`);
 });
