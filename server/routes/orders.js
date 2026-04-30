@@ -142,10 +142,6 @@ router.post("/cod", auth, async (req, res) => {
   }
 });
 
-/* =======================================================
-   4. CÁC API KHÁC (GET, UPDATE, DELETE)
-======================================================= */
-
 // Cập nhật địa chỉ
 router.patch("/update-shipping/:id", auth, async (req, res) => {
   try {
@@ -219,14 +215,14 @@ router.get("/:id", auth, async (req, res) => {
 // Hủy đơn hàng (User tự hủy)
 router.put("/:id/cancel", auth, async (req, res) => {
   try {
-    const { reason } = req.body;
+    const { reason } = req.body; // lấy lý do huỷ 
     
-    //  POPULATE USER ĐỂ CÓ EMAIL GỬI ĐI
+  // tìm đơn 
     const order = await Order.findOne({ _id: req.params.id, user: getUserId(req) })
         .populate("user", "email name");
 
     if (!order) return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
-
+    
     const allowed = ["pending", "Pending_Payment", "Waiting_Approval"];
     if (!allowed.includes(order.status)) {
       return res.status(400).json({ message: "Không thể huỷ đơn hàng ở trạng thái này" });

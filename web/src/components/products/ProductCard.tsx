@@ -18,7 +18,7 @@ export interface Product {
 
 interface Props {
   product: Product;
-  onClick?: () => void; // 👈 THÊM DÒNG NÀY: Để nhận sự kiện click từ cha
+  onClick?: () => void; //  THÊM DÒNG NÀY: Để nhận sự kiện click từ cha
 }
 
 const ProductCard: React.FC<Props> = ({ product, onClick }) => {
@@ -36,7 +36,7 @@ const ProductCard: React.FC<Props> = ({ product, onClick }) => {
 
   return (
     <div 
-      onClick={onClick} // 👈 Gắn sự kiện click vào div bao ngoài
+      onClick={onClick} // Gắn sự kiện click vào div bao ngoài
       className="group cursor-pointer bg-white rounded-2xl p-3 border border-gray-100 hover:border-gray-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col"
     >
       {/* Image Area */}

@@ -54,7 +54,7 @@ const LivestreamList: React.FC = () => {
   useEffect(() => {
     // A. Khi có Seller bắt đầu Live -> Thêm vào đầu danh sách
     socket.on("stream_started", (newStream: Livestream) => {
-        console.log("🔥 Có livestream mới:", newStream);
+        console.log(" Có livestream mới:", newStream);
         setLivestreams((prev) => {
             // Kiểm tra trùng lặp trước khi thêm
             if (prev.find(s => s.channelName === newStream.channelName)) return prev;
@@ -64,7 +64,7 @@ const LivestreamList: React.FC = () => {
 
     // B. Khi Seller kết thúc Live -> Xóa khỏi danh sách
     socket.on("stream_ended", (channelName: string) => {
-        console.log("❌ Livestream kết thúc:", channelName);
+        console.log(" Livestream kết thúc:", channelName);
         setLivestreams((prev) => prev.filter((stream) => stream.channelName !== channelName));
     });
 

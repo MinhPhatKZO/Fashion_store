@@ -3,7 +3,7 @@ const router = express.Router();
 const Livestream = require('../models/Livestream');
 const User = require('../models/User'); 
 
-// 👇 SỬA LẠI: Import đúng tên "auth" thay vì "verifyToken"
+//  SỬA LẠI: Import đúng tên "auth" thay vì "verifyToken"
 const { auth } = require('../middleware/auth'); 
 
 // 1. GET: Lấy danh sách Livestream đang phát
@@ -33,7 +33,7 @@ router.get('/', async (req, res) => {
 });
 
 // 2. POST: Tạo phiên Livestream mới
-// 👇 SỬA LẠI: Dùng middleware "auth" ở đây
+// SỬA LẠI: Dùng middleware "auth" ở đây
 router.post('/', auth, async (req, res) => {
   try {
     const { title } = req.body;
@@ -74,7 +74,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // 3. PUT: Kết thúc Livestream
-// 👇 SỬA LẠI: Dùng middleware "auth" ở đây
+//  SỬA LẠI: Dùng middleware "auth" ở đây
 router.put('/end', auth, async (req, res) => {
   try {
     const { channelName } = req.body;

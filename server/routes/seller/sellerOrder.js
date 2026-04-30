@@ -71,7 +71,7 @@ router.put("/:id/status", auth, async (req, res) => {
         return res.status(400).json({ message: "Trạng thái không hợp lệ" });
     }
 
-    // 👇 CẦN POPULATE USER ĐỂ LẤY EMAIL GỬI
+    //  CẦN POPULATE USER ĐỂ LẤY EMAIL GỬI
     const order = await Order.findOne({ _id: req.params.id, seller: req.userId })
         .populate("user", "email name");
 
@@ -103,7 +103,7 @@ router.put("/:id/status", auth, async (req, res) => {
 
     await order.save();
     
-    // 👇 GỬI EMAIL THÔNG BÁO CHO KHÁCH HÀNG (Chạy bất đồng bộ để không kẹt UI)
+    //  GỬI EMAIL THÔNG BÁO CHO KHÁCH HÀNG (Chạy bất đồng bộ để không kẹt UI)
     sendOrderEmail(order, status).catch(err => 
         console.error("Gửi email thất bại:", err.message)
     );

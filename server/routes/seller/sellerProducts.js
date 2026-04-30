@@ -38,7 +38,7 @@ router.get("/", auth, sellerBrandAuth, async (req, res) => {
       products,
     });
   } catch (error) {
-    console.error("❌ GET PRODUCTS ERROR:", error);
+    console.error(" GET PRODUCTS ERROR:", error);
     res.status(500).json({ success: false, message: "Lỗi lấy danh sách sản phẩm" });
   }
 });
@@ -80,7 +80,7 @@ router.post("/", auth, sellerBrandAuth, async (req, res) => {
 
     res.status(201).json({ success: true, product });
   } catch (error) {
-    console.error("❌ CREATE PRODUCT ERROR:", error);
+    console.error("CREATE PRODUCT ERROR:", error);
     res.status(500).json({ success: false, message: "Lỗi tạo sản phẩm" });
   }
 });
@@ -158,7 +158,7 @@ router.post("/:id/images", auth, sellerBrandAuth, upload.array("images", 10), as
 
     if (!product) return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
 
-    // ✅ CHỈNH SỬA: Map sang Object structure khớp với products.json
+    //  CHỈNH SỬA: Map sang Object structure khớp với products.json
     const newImages = req.files.map((f) => ({
       url: `/assets/products/${f.filename}`,
       alt: f.originalname || ""
@@ -195,7 +195,7 @@ router.delete("/:id", auth, sellerBrandAuth, async (req, res) => {
 
     res.json({ success: true, message: "Xoá sản phẩm thành công" });
   } catch (error) {
-    console.error("❌ DELETE PRODUCT ERROR:", error);
+    console.error(" DELETE PRODUCT ERROR:", error);
     res.status(500).json({ message: "Lỗi xoá sản phẩm" });
   }
 });

@@ -48,7 +48,7 @@ router.get("/dashboard", auth, sellerBrandAuth, async (req, res) => {
 
     orders.forEach((order) => {
       /**
-       * ✅ LOGIC ĐÚNG NGHIỆP VỤ
+       *  LOGIC ĐÚNG NGHIỆP VỤ
        * - Tính tất cả đơn KHÔNG bị huỷ
        * - KHỚP UI: completed / shipped / processing
        */

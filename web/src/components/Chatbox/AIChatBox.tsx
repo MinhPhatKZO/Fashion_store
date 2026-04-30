@@ -56,10 +56,11 @@ const AIChatBox: React.FC<AIChatBoxProps> = ({ brand, currentUser, onClose }) =>
         setIsLoading(true);
 
         try {
-            const response = await axios.post('http://localhost:8000/chat', {
-                message: userMsg,
-                brand_id: brand._id 
-            });
+           const response = await axios.post('http://localhost:8000/chat', {
+    message: userMsg,
+    user_id: currentUser ? currentUser._id : null, // Thêm dòng này để gửi ID xuống cho AI bắt mạch
+    brand_id: brand._id 
+});
 
             if (response.data.success) {
                 setMessages(prev => [...prev, { 

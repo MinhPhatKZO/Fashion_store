@@ -4,12 +4,12 @@ const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
 const { OAuth2Client } = require("google-auth-library");
 const axios = require("axios");
-const crypto = require("crypto"); // 👇 Thêm thư viện Crypto
+const crypto = require("crypto"); //  Thêm thư viện Crypto
 
 const User = require("../models/User");
 const Brand = require("../models/Brands");
 const { auth, adminAuth } = require("../middleware/auth");
-const { sendOrderEmail } = require("../utils/emailService"); // 👇 Import Email Service
+const { sendOrderEmail } = require("../utils/emailService"); //  Import Email Service
 
 const router = express.Router();
 

@@ -6,14 +6,15 @@ const moment = require("moment");
 
 // Import Model Order
 const Order = require("../models/Order");
-//  Import hàm gửi email
+// Import hàm gửi email
 const { sendOrderEmail } = require("../utils/emailService");
 
 // --- CẤU HÌNH ---
-const tmnCode = process.env.VNP_TMNCODE || "HHGNT690";
+// Đã ẩn hoàn toàn thông tin, chỉ lấy từ biến môi trường (.env)
+const tmnCode = process.env.VNP_TMNCODE;
 const secretKey = process.env.VNP_HASHSECRET;
-const vnpUrl = process.env.VNP_URL || "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-const returnUrl = "http://localhost:5000/api/vnpay/vnpay_return"; 
+const vnpUrl = process.env.VNP_URL;
+const returnUrl = process.env.VNP_RETURNURL; 
 
 function sortObject(obj) {
   let sorted = {};
@@ -31,7 +32,7 @@ function sortObject(obj) {
   return sorted;
 }
 
-// 1. TẠO URL THANH TOÁN (Giữ nguyên)
+// 1. TẠO URL THANH TOÁN
 router.post("/create_payment_url", (req, res) => {
   try {
     process.env.TZ = "Asia/Ho_Chi_Minh";
@@ -40,7 +41,9 @@ router.post("/create_payment_url", (req, res) => {
 
     const { orderId, amount, bankCode, language } = req.body;
     
+    // Kiểm tra cấu hình .env, nếu thiếu sẽ báo lỗi ngay lập tức
     if (!tmnCode || !secretKey || !vnpUrl || !returnUrl) {
+       console.error("Lỗi: Thiếu biến môi trường VNPay trong file .env");
        return res.status(500).json({ success: false, message: "Thiếu Config VNPay" });
     }
 
@@ -55,8 +58,10 @@ router.post("/create_payment_url", (req, res) => {
     vnp_Params["vnp_Locale"] = language || "vn";
     vnp_Params["vnp_CurrCode"] = "VND";
     vnp_Params["vnp_TxnRef"] = orderId;
-    vnp_Params["vnp_OrderInfo"] = "Thanh toan don hang: " + orderId;
-    vnp_Params["vnp_OrderType"] = "other";
+    
+    vnp_Params["vnp_OrderInfo"] = "Thanh toan don hang " + orderId; 
+    vnp_Params["vnp_OrderType"] = "billpayment"; 
+    
     vnp_Params["vnp_Amount"] = amountInVND * 100;
     vnp_Params["vnp_ReturnUrl"] = returnUrl;
     vnp_Params["vnp_IpAddr"] = ipAddr;
@@ -78,7 +83,7 @@ router.post("/create_payment_url", (req, res) => {
   }
 });
 
-// 2. VNPAY RETURN (Cập nhật DB -> Waiting_Approval & GỬI EMAIL)
+// 2. VNPAY RETURN
 router.get("/vnpay_return", async (req, res) => {
   try {
     let vnp_Params = req.query;
@@ -105,10 +110,10 @@ router.get("/vnpay_return", async (req, res) => {
                 isPaid: true,
                 paymentMethod: 'VNPay',
                 paidAt: new Date()
-            }, { new: true }) // Quan trọng: Lấy order mới nhất
-            .populate("user", "email name"); // Quan trọng: Lấy email để gửi
+            }, { new: true })
+            .populate("user", "email name");
 
-            // 👇 GỬI EMAIL "THANH TOÁN THÀNH CÔNG"
+            // GỬI EMAIL
             if (updatedOrder) {
                 sendOrderEmail(updatedOrder, "Waiting_Approval").catch(err => 
                     console.error("Send mail failed:", err.message)
@@ -129,7 +134,7 @@ router.get("/vnpay_return", async (req, res) => {
   }
 });
 
-// 3. VNPAY IPN (Cập nhật DB -> Waiting_Approval & GỬI EMAIL)
+// 3. VNPAY IPN
 router.get("/vnpay_ipn", async (req, res) => {
   try {
     let vnp_Params = req.query;
@@ -154,7 +159,6 @@ router.get("/vnpay_ipn", async (req, res) => {
         }
 
         if (rspCode === "00") {
-            // Cập nhật DB
             const updatedOrder = await Order.findByIdAndUpdate(orderId, {
                 status: 'Waiting_Approval',
                 isPaid: true,
@@ -165,7 +169,6 @@ router.get("/vnpay_ipn", async (req, res) => {
 
             console.log(" IPN: Updated Order Success:", orderId);
 
-            // 👇 GỬI EMAIL (Nếu Return URL chưa gửi kịp thì IPN sẽ gửi)
             if (updatedOrder) {
                 sendOrderEmail(updatedOrder, "Waiting_Approval").catch(err => 
                      console.error("IPN Send mail failed:", err.message)

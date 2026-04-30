@@ -91,17 +91,17 @@ io.on("connection", (socket) => {
     if (!roomName) return;
     socket.join(roomName);
     socket.isViewer = (role === 'viewer');
-
+// chỉ tăng nếu là viewer
     if (socket.isViewer) {
         if (!roomViewers[roomName]) roomViewers[roomName] = 0;
         roomViewers[roomName]++;
     }
-    
+// cập nhật số lượng
     const currentView = roomViewers[roomName] || 0;
     io.to(roomName).emit("view_count_update", { channelName: roomName, count: currentView });
     io.emit("stream_stats_update", { channelName: roomName, viewers: currentView });
     
-    console.log(`📺 ${role.toUpperCase()} joined: ${roomName}. Views: ${currentView}`);
+    console.log(` ${role.toUpperCase()} joined: ${roomName}. Views: ${currentView}`);
   });
 
   socket.on("leave_livestream", (roomName) => {
@@ -116,7 +116,7 @@ io.on("connection", (socket) => {
 
   socket.on("seller_start_live", (streamData) => {
       io.emit("stream_started", streamData); 
-      console.log("🔥 New Stream Started:", streamData.title);
+      console.log(" New Stream Started:", streamData.title);
   });
 
   socket.on("end_livestream", (roomName) => {

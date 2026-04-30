@@ -6,7 +6,9 @@ const { auth } = require('../middleware/auth');
 
 // --- CAU HINH TU DONG TRAIN AI ---
 let interactionCounter = 0;
-const TRAIN_THRESHOLD = 5; // Nguong 100 luot tuong tac
+// MẸO: Giữ ngưỡng là 5 lúc đi bảo vệ đồ án để dễ demo. 
+// Khi chạy thực tế có thể đổi lên 100 hoặc 500.
+const TRAIN_THRESHOLD = 5; 
 let isTraining = false; 
 
 const triggerAutoTrain = async () => {
@@ -14,21 +16,18 @@ const triggerAutoTrain = async () => {
     
     try {
         isTraining = true;
+        interactionCounter = 0; // Reset biến đếm
         
-        // BUOC QUAN TRONG: Reset bien dem ngay khi bat dau goi lenh Train
-        // Dieu nay giup cac luot xem phat sinh TRONG LUC dang train se duoc tinh cho dot sau
-        interactionCounter = 0; 
+        console.log(`--- AI SYSTEM: Đã đạt ngưỡng ${TRAIN_THRESHOLD} tương tác. Đang kích hoạt tự động học (Auto-Train) ---`);
         
-        console.log("--- AI SYSTEM: Dang tu dong kich hoat Train (Nguong 100) ---");
-        
-        const response = await axios.post("http://127.0.0.1:8000/train");
+        // 1. SỬA LẠI ĐÚNG ĐƯỜNG DẪN API CỦA FASTAPI
+        const response = await axios.post("http://127.0.0.1:8000/api/ai/train");
         
         if (response.data.success) {
-            console.log("--- AI SYSTEM: AI da hoc xong! San sang cho dot tiep theo. ---");
+            console.log("--- AI SYSTEM: AI đã học xong trọng số mới! Sẵn sàng phục vụ. ---");
         }
     } catch (error) {
-        console.error("--- AI SYSTEM ERROR: Tu dong Train that bai:", error.message);
-        // Neu train loi, co the de lai 1 phan bien dem de thu lai sau (tuy ban chon)
+        console.error("--- AI SYSTEM ERROR: Tự động Train thất bại:", error.message);
     } finally {
         isTraining = false;
     }
@@ -37,12 +36,14 @@ const triggerAutoTrain = async () => {
 // API: Luu lai tuong tac cua nguoi dung
 router.post('/', auth, async (req, res) => {
     try {
+        // Đảm bảo action truyền từ Frontend lên là 1 trong 4 chữ: "view", "click", "add_to_cart", "purchase"
         const { productId, action } = req.body;
         const userId = req.user.id;
 
+        // Điểm số này Nodejs lưu cho vui mặt tiền, Python sẽ tự tính lại bằng Dictionary bên đó
         let score = 1;
-        if (action === 'cart') score = 3;
-        if (action === 'buy') score = 5;
+        if (action === 'add_to_cart') score = 3; // 2. SỬA LẠI TỪ KHÓA CHO KHỚP VỚI PYTHON
+        if (action === 'purchase') score = 5;
 
         let interaction = await Interaction.findOne({ userId, productId, action });
 
@@ -50,23 +51,25 @@ router.post('/', auth, async (req, res) => {
             interaction.updatedAt = Date.now();
             await interaction.save();
         } else {
+            // Bên Nodejs lưu action = "add_to_cart" thì bên Python doc.get("type") phải khớp nhé
+            // Lưu ý: Cột trong DB của bạn tên là 'action' hay 'type'? 
+            // Nếu schema là 'action' thì file python train_engine.py nhớ dùng doc.get("action")
             interaction = new Interaction({ userId, productId, action, score });
             await interaction.save();
         }
 
-        // --- LOGIC DEM VA KICH HOAT TRAIN ---
+        // --- LOGIC ĐẾM VÀ KÍCH HOẠT TRAIN ---
         interactionCounter++;
-        console.log(`[AI Counter] Tien do: ${interactionCounter}/${TRAIN_THRESHOLD}`);
+        console.log(`[AI Counter] Tiến độ thu thập dữ liệu: ${interactionCounter}/${TRAIN_THRESHOLD}`);
 
         if (interactionCounter >= TRAIN_THRESHOLD && !isTraining) {
-            // Goi ham train va khong await de User khong phai doi
-            triggerAutoTrain();
+            triggerAutoTrain(); // Gọi hàm chạy ngầm, không bắt User chờ
         }
 
-        res.status(200).json({ success: true, message: "Da ghi nhan tuong tac" });
+        res.status(200).json({ success: true, message: "Đã ghi nhận tương tác" });
     } catch (error) {
-        console.error("Loi luu interaction:", error);
-        res.status(500).json({ success: false, message: "Loi may chu noi bo" });
+        console.error("Lỗi lưu interaction:", error);
+        res.status(500).json({ success: false, message: "Lỗi máy chủ nội bộ" });
     }
 });
 
